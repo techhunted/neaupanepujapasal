@@ -544,7 +544,7 @@
         margin: 0 auto; /* Center the print area if possible */
         /* FIX: Center the invoice on the page */
         display: flex;
-        align-items: center;
+        align-items: flex-start; /* Aligned to top for mobile scrolling if needed */
         justify-content: center;
       }
       
@@ -1229,7 +1229,7 @@
             // Update buttons to also show "Back to Saved Bills"
             document.getElementById('invoice-actions').innerHTML = `
                 <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
-                <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
+                <button onclick="downloadInvoice(true)"><i class="fa fa-download"></i> Save/Download</button>
                 <button onclick="shareInvoice()" id="share-invoice-btn-saved"><i class="fa-solid fa-share-nodes"></i> Share</button>
                 <button onclick="showSavedBills()">Back to Saved Bills</button>
             `;
@@ -1273,7 +1273,8 @@
           viewSavedBillForActions(billid).then(() => {
               // Delay to ensure rendering is complete before calling downloadInvoice
               setTimeout(() => {
-                  downloadInvoice(true); // true means delete after download
+                  // Pass true to delete after download (if coming from saved bills)
+                  downloadInvoice(true); 
               }, 100);
           });
         } else {
@@ -1305,6 +1306,8 @@
     
     // === UPDATED: SHOP MOBILE AND NO LOGO ===
     function renderInvoice(inv) {
+      // FIX 1: The QR code element needs to be inside a unique container inside the invoice box
+      // so we can properly target it for generation and control its visibility.
       document.getElementById('invoice-box').innerHTML = `
         <div class="invoice-header">
           
@@ -1342,9 +1345,9 @@
           
           <div>Operator: ${inv.adminName}</div>
         </div>
-        <div class="invoice-qr" id="invoice-qr"></div>
+        <div class="invoice-qr" id="invoice-qr-container"></div>
       `;
-      // Default actions (will be overwritten if coming from Saved Bills)
+      // Default actions (will be overwritten if coming from Saved Bills or History)
       document.getElementById('invoice-actions').innerHTML = `
           <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
           <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
@@ -1358,8 +1361,12 @@
           if (shareBtn) shareBtn.style.display = 'none';
       }
 
+      // Clear previous QR code and generate new one
+      const qrContainer = document.getElementById("invoice-qr-container");
+      qrContainer.innerHTML = ''; // Clear previous QR content
       let qrPayload = JSON.stringify({ id: inv.id, total: inv.total, date: inv.time });
-      setTimeout(()=>new QRCode(document.getElementById("invoice-qr"),{ text:qrPayload, width:72,height:72 }),100);
+      // The class "invoice-qr" handles positioning
+      setTimeout(()=>new QRCode(qrContainer,{ text:qrPayload, width:72,height:72 }),100);
     }
     // === END UPDATED: SHOP MOBILE AND NO LOGO ===
 
@@ -1368,12 +1375,13 @@
       window.print();
     }
     
-    // FIX 2: Download Invoice Functionality
+    // FIX 2: Download Invoice Functionality (Save to device)
     function downloadInvoice(deleteAfter = false) {
       if (!INVOICE) {
           showToast("No active invoice to download.", "error");
           return;
       }
+      // FIX 1: Target only the invoice-box content for PDF generation
       let area = document.getElementById('invoice-box');
       html2pdf().from(area).save(INVOICE.id+".pdf").then(()=>{
           showToast("Bill successfully saved to device!", "success");
@@ -1402,6 +1410,7 @@
 
         try {
             // 1. Generate the PDF content as a Blob
+            // FIX 1: Target only the invoice-box content for PDF generation
             const element = document.getElementById('invoice-box');
             const pdfBlob = await html2pdf().from(element).outputPdf('blob');
             
@@ -1411,7 +1420,7 @@
             // 3. Share the file
             await navigator.share({
                 title: 'Neaupane Puja Pasal - Invoice ' + INVOICE.id,
-                text: `Dear ${INVOICE.customer}, Your total amount is ₹${INVOICE.total.toFixed(2)}. Thank you for your purchase from Neaupane Puja Pasal.`,
+                text: `Dear ${INVOICE.customer}, your total amount is ₹${INVOICE.total.toFixed(2)}. Thank you for your purchase from Neaupane Puja Pasal (Mobile: +919641891846).`,
                 files: [file],
             });
             
@@ -1777,7 +1786,7 @@
         document.getElementById('admin-area').style.display='none';
         document.getElementById('billing-area').style.display='none';
         
-        // Update actions to only show View/Print/Download (no hold/back to billing)
+        // FIX 2: Back button for history page.
         document.getElementById('invoice-actions').innerHTML = `
             <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
             <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
