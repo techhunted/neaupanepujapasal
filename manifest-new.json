@@ -1,0 +1,12 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "techhunted.github",
+  "orientation": "any",
+  "scope": "/https://techhunted.github.io/neaupanepuja/",
+  "short_name": "techhunted.github",
+  "start_url": "/https://techhunted.github.io/neaupanepuja/",
+  "theme_color": "#ffffff",
+  "lang": "ne"
+}
