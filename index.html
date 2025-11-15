@@ -746,10 +746,12 @@
           <button class="admin-tab" data-admin="qrverify"><i class="fa fa-qrcode"></i> QR Code Verify</button>
           <button class="admin-tab" data-admin="addeditems">
           <i class="fa fa-box"></i> Added Items</button>
-          <div id="itemsList"></div>
+          
 
         </nav>
+        
         <div class="admin-content" id="admin-content">
+          
           </div>
       </div>
     </div>
@@ -1522,6 +1524,22 @@
         });
     }
     
+    // Function to read file content (kept as is)
+//... (Rest of the script continues above this function) ...
+  //... (Rest of the script continues above this function) ...
+    
+    //... (Rest of the script continues above this function) ...
+
+    function readFileContent(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(e);
+            reader.readAsText(file);
+        });
+    }
+    
+    // === START: Updated processUploadedItems Function (Covering All JSON Keys and Mapping) ===
     async function processUploadedItems() {
         const fileInput = document.getElementById('item-upload-file');
         const file = fileInput.files[0];
@@ -1538,33 +1556,62 @@
 
             if (fileName.endsWith('.json')) {
                 let parsed = JSON.parse(content);
-                if (!Array.isArray(parsed)) {
-                    if (parsed.items && Array.isArray(parsed.items)) {
-                        parsed = parsed.items; // Handle {items: [...]}
+                let rawItems = [];
+                
+                // 1. Extract the raw array of items from the JSON object
+                if (Array.isArray(parsed)) {
+                    rawItems = parsed;
+                } else if (parsed && typeof parsed === 'object') {
+                    // Check all common nested array keys
+                    if (Array.isArray(parsed.items)) {
+                        rawItems = parsed.items; 
+                    } else if (Array.isArray(parsed.Puja_Samagri_List)) { 
+                        rawItems = parsed.Puja_Samagri_List; 
+                    } else if (Array.isArray(parsed.Additional_Puja_Samagri_List)) { // FIX: New Key
+                        rawItems = parsed.Additional_Puja_Samagri_List; 
                     } else {
-                        parsed = [parsed];
+                        // If it's a single object (not an array)
+                        rawItems = [parsed];
                     }
                 }
-                itemsToAdd = parsed;
+
+                // 2. Map the raw items to the expected lowercase structure
+                itemsToAdd = rawItems.map(item => ({
+                    // Mapping logic: Prioritize Name/Qty/Price_INR (Capitalized keys)
+                    name: item.Name ? item.Name.trim() : (item.name ? item.name.trim() : ''),
+                    company: item.Company || item.company || '',
+                    category: item.Category || item.category || 'Uncategorized',
+                    quantity: Number(item.Qty) || Number(item.quantity) || 0,
+                    unit: item.Unit || item.unit || 'pieces',
+                    stock: Number(item.Stock) || Number(item.stock) || Number(item.Qty) || 0, 
+                    price: Number(item.Price_INR) || Number(item.price) || 0, // Mapping Price_INR
+                    available: item.available !== undefined ? !!item.available : true,
+                    sku: item.SKU || item.sku || '',
+                    description: item.Description || item.description || '',
+                    size: item.Size || item.size || ''
+                })).filter(item => item.name); // Filter out items without a valid name
+
             } else if (fileName.endsWith('.csv')) {
                 const rows = content.trim().split('\n');
                 if (rows.length < 2) {
                     return showToast("CSV file is empty or has no headers.", "error");
                 }
-                const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+                const headers = rows[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, ''));
                 
                 rows.slice(1).forEach(row => {
                     const values = row.split(',').map(v => v.trim());
                     if (values.length === headers.length) {
                         let item = {};
                         headers.forEach((header, i) => {
-                            let key = header.replace(/\s+/g, '').toLowerCase();
                             let value = values[i];
+                            let key = header;
+                            
                             if (['quantity', 'stock', 'price'].includes(key)) {
                                 value = Number(value) || 0;
                             }
                             item[key] = value;
                         });
+                        
                         item.name = item.name || item.itemname || ''; 
                         item.category = item.category || 'Uncategorized';
                         if (item.name) itemsToAdd.push(item);
@@ -1575,25 +1622,30 @@
             }
             
             if (itemsToAdd.length === 0) {
-                 return showToast("File was processed, but no valid items were found.", "error");
+                 return showToast("File was processed, but no valid items were found. Check JSON/CSV format and ensure items have a 'Name' or 'name' field.", "error");
             }
 
             let successCount = 0;
             let batch = db.batch();
             itemsToAdd.forEach(itemData => {
-                if (itemData.name) {
+                const name = itemData.name;
+                const price = Number(itemData.price) || 0;
+                const quantity = Number(itemData.quantity) || 0;
+                const stock = Number(itemData.stock) || quantity;
+                
+                if (name) {
                     batch.set(db.collection('products').doc(), {
-                        name: itemData.name,
-                        company: itemData.company || '',
-                        category: itemData.category || 'Uncategorized',
-                        quantity: itemData.quantity || 0,
-                        unit: itemData.unit || 'pcs',
-                        stock: itemData.stock || itemData.quantity || 0,
-                        price: itemData.price || 0,
-                        available: true,
-                        sku: itemData.sku || '',
-                        description: itemData.description || '',
-                        size: itemData.size || ''
+                        name: name.trim(),
+                        company: itemData.company ? itemData.company.trim() : '',
+                        category: itemData.category ? itemData.category.trim() : 'Uncategorized',
+                        quantity: quantity,
+                        unit: itemData.unit ? itemData.unit.trim() : 'pieces',
+                        stock: stock,
+                        price: price,
+                        available: itemData.available !== undefined ? !!itemData.available : true,
+                        sku: itemData.sku ? itemData.sku.trim() : '',
+                        description: itemData.description ? itemData.description.trim() : '',
+                        size: itemData.size ? itemData.size.trim() : ''
                     });
                     successCount++;
                 }
@@ -1610,11 +1662,12 @@
             
         } catch (error) {
             console.error("Bulk upload error:", error);
-            showToast("Error processing file. Check format and console.", "error");
+            showToast("Error processing file. Check format and console. Error: " + error.message, "error");
         }
     }
-
-
+    // === END: Updated processUploadedItems Function ===
+    
+    //... (Rest of the script continues below this function) ...
     function renderAdminTodoInv() {
   document.getElementById('admin-content').innerHTML = `
     <div class="form-card">
@@ -2025,1128 +2078,6 @@ function deleteItem(itemId) {
     })
     .catch(() => showToast("Error deleting item!", "error"));
 }
-
-const Puja_Samagri_List = [
-    {
-      "Name": "हल्दी पाउडर",
-      "Company": "Branded/Local",
-      "Category": "Spice/Puja",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 40,
-      "Stock": 10,
-      "Size": "100g"
-    },
-    {
-      "Name": "कुमकुम/रोली",
-      "Company": "Branded/Local",
-      "Category": "Puja",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 30,
-      "Stock": 15,
-      "Size": "50g"
-    },
-    {
-      "Name": "चंदन पाउडर",
-      "Company": "Branded/Local",
-      "Category": "Puja",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 80,
-      "Stock": 8,
-      "Size": "50g"
-    },
-    {
-      "Name": "कपूर",
-      "Company": "Branded/Local",
-      "Category": "Incense",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 50,
-      "Stock": 20,
-      "Size": "100g"
-    },
-    {
-      "Name": "हवन सामग्री",
-      "Company": "Branded/Local",
-      "Category": "Havan",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 150,
-      "Stock": 7,
-      "Size": "500g"
-    },
-    {
-      "Name": "अगरबत्ती",
-      "Company": "Branded/Local",
-      "Category": "Incense",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 35,
-      "Stock": 30,
-      "Size": "standard"
-    },
-    {
-      "Name": "इत्र/अत्तर",
-      "Company": "Branded/Local",
-      "Category": "Fragrance",
-      "Qty": 1,
-      "Unit": "bottle",
-      "Price_INR": 200,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "गंगाजल",
-      "Company": "Branded/Local",
-      "Category": "Holy Water",
-      "Qty": 1,
-      "Unit": "bottle",
-      "Price_INR": 70,
-      "Stock": 12,
-      "Size": "250ml"
-    },
-    {
-      "Name": "गाय का घी",
-      "Company": "Branded/Local",
-      "Category": "Oil/Ghee",
-      "Qty": 1,
-      "Unit": "bottle",
-      "Price_INR": 350,
-      "Stock": 10,
-      "Size": "200ml"
-    },
-    {
-      "Name": "तिल का तेल",
-      "Company": "Fortune/Local",
-      "Category": "Oil",
-      "Qty": 1,
-      "Unit": "liter",
-      "Price_INR": 120,
-      "Stock": 5,
-      "Size": "-"
-    },
-    {
-      "Name": "रूई की बाती (गोल)",
-      "Company": "Branded/Local",
-      "Category": "Puja",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 20,
-      "Stock": 40,
-      "Size": "small"
-    },
-    {
-      "Name": "मौली/कलावा",
-      "Company": "Local Shop",
-      "Category": "Thread",
-      "Qty": 1,
-      "Unit": "reel",
-      "Price_INR": 30,
-      "Stock": 25,
-      "Size": "standard"
-    },
-    {
-      "Name": "जनेऊ/यज्ञोपवीत",
-      "Company": "Local Shop",
-      "Category": "Thread",
-      "Qty": 3,
-      "Unit": "pieces",
-      "Price_INR": 50,
-      "Stock": 15,
-      "Size": "standard"
-    },
-    {
-      "Name": "पीतल/ताँबे का कलश",
-      "Company": "Copperhub",
-      "Category": "Copper",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 650,
-      "Stock": 5,
-      "Size": "medium"
-    },
-    {
-      "Name": "तांबे का लोटा",
-      "Company": "Copperhub",
-      "Category": "Copper",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 350,
-      "Stock": 8,
-      "Size": "small"
-    },
-    {
-      "Name": "आरती थाली",
-      "Company": "Steel/Brass",
-      "Category": "Metal",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 250,
-      "Stock": 12,
-      "Size": "medium"
-    },
-    {
-      "Name": "मिट्टी का दिया",
-      "Company": "Matti Kalash",
-      "Category": "Mitti",
-      "Qty": 5,
-      "Unit": "pieces",
-      "Price_INR": 10,
-      "Stock": 50,
-      "Size": "small"
-    },
-    {
-      "Name": "ताँबे का दीया",
-      "Company": "Copperhub",
-      "Category": "Copper",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 320,
-      "Stock": 5,
-      "Size": "large"
-    },
-    {
-      "Name": "केला",
-      "Company": "Fruit Seller",
-      "Category": "Fruit",
-      "Qty": 12,
-      "Unit": "pieces",
-      "Price_INR": 60,
-      "Stock": 20,
-      "Size": "standard"
-    },
-    {
-      "Name": "नारियल (पानी वाला)",
-      "Company": "Fruit Seller",
-      "Category": "Fruit",
-      "Qty": 2,
-      "Unit": "pieces",
-      "Price_INR": 80,
-      "Stock": 15,
-      "Size": "standard"
-    },
-    {
-      "Name": "पान के पत्ते",
-      "Company": "Vegetable Seller",
-      "Category": "Leaf",
-      "Qty": 11,
-      "Unit": "pieces",
-      "Price_INR": 50,
-      "Stock": 20,
-      "Size": "standard"
-    },
-    {
-      "Name": "सुपारी",
-      "Company": "Local Shop",
-      "Category": "Nut",
-      "Qty": 21,
-      "Unit": "pieces",
-      "Price_INR": 40,
-      "Stock": 25,
-      "Size": "small"
-    },
-    {
-      "Name": "माला (गुलाब/गेंदा)",
-      "Company": "Florist",
-      "Category": "Flower",
-      "Qty": 2,
-      "Unit": "piece",
-      "Price_INR": 80,
-      "Stock": 20,
-      "Size": "standard"
-    },
-    {
-      "Name": "बेलपत्र",
-      "Company": "Gardener",
-      "Category": "Leaf",
-      "Qty": 21,
-      "Unit": "pieces",
-      "Price_INR": 50,
-      "Stock": 8,
-      "Size": "standard"
-    },
-    {
-      "Name": "अक्षत (चावल)",
-      "Company": "Branded/Local",
-      "Category": "Grain",
-      "Qty": 1,
-      "Unit": "kg",
-      "Price_INR": 50,
-      "Stock": 20,
-      "Size": "-"
-    },
-    {
-      "Name": "इलायची",
-      "Company": "Branded/Local",
-      "Category": "Spice",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 80,
-      "Stock": 10,
-      "Size": "50g"
-    },
-    {
-      "Name": "लौंग",
-      "Company": "Branded/Local",
-      "Category": "Spice",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 60,
-      "Stock": 12,
-      "Size": "50g"
-    },
-    {
-      "Name": "शहद",
-      "Company": "Branded/Local",
-      "Category": "Sweetener",
-      "Qty": 1,
-      "Unit": "bottle",
-      "Price_INR": 150,
-      "Stock": 8,
-      "Size": "100g"
-    },
-    {
-      "Name": "सिंदूर",
-      "Company": "Branded/Local",
-      "Category": "Puja",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 40,
-      "Stock": 15,
-      "Size": "50g"
-    },
-    {
-      "Name": "आम की लकड़ी (समिधा)",
-      "Company": "Wood Shop",
-      "Category": "Havan",
-      "Qty": 1,
-      "Unit": "kg",
-      "Price_INR": 50,
-      "Stock": 10,
-      "Size": "-"
-    },
-    {
-      "Name": "जौ",
-      "Company": "Grain Shop",
-      "Category": "Havan",
-      "Qty": 1,
-      "Unit": "kg",
-      "Price_INR": 60,
-      "Stock": 8,
-      "Size": "-"
-    },
-    {
-      "Name": "तिल (सफेद)",
-      "Company": "Grain Shop",
-      "Category": "Havan",
-      "Qty": 1,
-      "Unit": "kg",
-      "Price_INR": 150,
-      "Stock": 5,
-      "Size": "-"
-    },
-    {
-      "Name": "किशमिश",
-      "Company": "Dry Fruit Shop",
-      "Category": "Dry Fruit",
-      "Qty": 100,
-      "Unit": "gram",
-      "Price_INR": 80,
-      "Stock": 10,
-      "Size": "-"
-    },
-    {
-      "Name": "काजू",
-      "Company": "Dry Fruit Shop",
-      "Category": "Dry Fruit",
-      "Qty": 100,
-      "Unit": "gram",
-      "Price_INR": 120,
-      "Stock": 10,
-      "Size": "-"
-    },
-    {
-      "Name": "बादाम",
-      "Company": "Dry Fruit Shop",
-      "Category": "Dry Fruit",
-      "Qty": 100,
-      "Unit": "gram",
-      "Price_INR": 100,
-      "Stock": 10,
-      "Size": "-"
-    },
-    {
-      "Name": "रुद्राक्ष माला",
-      "Company": "Local Shop",
-      "Category": "Bead",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 150,
-      "Stock": 10,
-      "Size": "108 beads"
-    },
-    {
-      "Name": "शंख",
-      "Company": "Local Shop",
-      "Category": "Shell",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 450,
-      "Stock": 7,
-      "Size": "medium"
-    },
-    {
-      "Name": "नवग्रह समिधा",
-      "Company": "Local Shop",
-      "Category": "Havan",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 150,
-      "Stock": 5,
-      "Size": "standard"
-    },
-    {
-      "Name": "सफेद सरसों",
-      "Company": "Grain Shop",
-      "Category": "Spice",
-      "Qty": 100,
-      "Unit": "gram",
-      "Price_INR": 40,
-      "Stock": 10,
-      "Size": "-"
-    },
-    {
-      "Name": "पीली चुनरी",
-      "Company": "Cloth Shop",
-      "Category": "Fabric",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 150,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "गोमती चक्र",
-      "Company": "Local Shop",
-      "Category": "Shell",
-      "Qty": 11,
-      "Unit": "pieces",
-      "Price_INR": 50,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "पीतल की घंटी",
-      "Company": "Brasswork",
-      "Category": "Brass",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 400,
-      "Stock": 7,
-      "Size": "medium"
-    },
-    {
-      "Name": "अष्टगंध",
-      "Company": "Branded/Local",
-      "Category": "Puja",
-      "Qty": 1,
-      "Unit": "box",
-      "Price_INR": 120,
-      "Stock": 5,
-      "Size": "small"
-    },
-    {
-      "Name": "धूप बत्ती",
-      "Company": "Branded/Local",
-      "Category": "Incense",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 45,
-      "Stock": 25,
-      "Size": "standard"
-    },
-    {
-      "Name": "लोबान",
-      "Company": "Local Shop",
-      "Category": "Incense",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 60,
-      "Stock": 5,
-      "Size": "50g"
-    },
-    {
-      "Name": "केसर",
-      "Company": "Kashmiri",
-      "Category": "Spice/Puja",
-      "Qty": 1,
-      "Unit": "gram",
-      "Price_INR": 350,
-      "Stock": 3,
-      "Size": "small"
-    },
-    {
-      "Name": "गुलाब जल",
-      "Company": "Branded/Local",
-      "Category": "Puja",
-      "Qty": 1,
-      "Unit": "bottle",
-      "Price_INR": 65,
-      "Stock": 9,
-      "Size": "100ml"
-    },
-    {
-      "Name": "पंचामृत (दूध, दही, घी, शहद, चीनी)",
-      "Company": "Home/Dairy",
-      "Category": "Edible",
-      "Qty": 1,
-      "Unit": "set",
-      "Price_INR": 0,
-      "Stock": 0,
-      "Size": "-"
-    },
-    {
-      "Name": "रूई की बाती (लंबी)",
-      "Company": "Branded/Local",
-      "Category": "Puja",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 25,
-      "Stock": 35,
-      "Size": "small"
-    },
-    {
-      "Name": "माचिस",
-      "Company": "Local Shop",
-      "Category": "Utility",
-      "Qty": 1,
-      "Unit": "box",
-      "Price_INR": 2,
-      "Stock": 50,
-      "Size": "standard"
-    },
-    {
-      "Name": "लाल कपड़ा (पूजा)",
-      "Company": "Cloth Shop",
-      "Category": "Fabric",
-      "Qty": 1,
-      "Unit": "meter",
-      "Price_INR": 80,
-      "Stock": 10,
-      "Size": "standard"
-    },
-    {
-      "Name": "पीला कपड़ा (पूजा)",
-      "Company": "Cloth Shop",
-      "Category": "Fabric",
-      "Qty": 1,
-      "Unit": "meter",
-      "Price_INR": 80,
-      "Stock": 10,
-      "Size": "standard"
-    },
-    {
-      "Name": "रुई",
-      "Company": "Branded/Local",
-      "Category": "Utility",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 40,
-      "Stock": 15,
-      "Size": "100g"
-    },
-    {
-      "Name": "ब्लाउज पीस (देवियों के लिए)",
-      "Company": "Cloth Shop",
-      "Category": "Fabric",
-      "Qty": 2,
-      "Unit": "pieces",
-      "Price_INR": 100,
-      "Stock": 5,
-      "Size": "standard"
-    },
-    {
-      "Name": "आचमनी सेट (चम्मच और पात्र)",
-      "Company": "Copperhub",
-      "Category": "Copper",
-      "Qty": 1,
-      "Unit": "set",
-      "Price_INR": 250,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "पीतल की छोटी कटोरी",
-      "Company": "Brasswork",
-      "Category": "Brass",
-      "Qty": 4,
-      "Unit": "pieces",
-      "Price_INR": 150,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "कपूरदानी",
-      "Company": "Brasswork",
-      "Category": "Brass",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 280,
-      "Stock": 6,
-      "Size": "standard"
-    },
-    {
-      "Name": "सेब",
-      "Company": "Fruit Seller",
-      "Category": "Fruit",
-      "Qty": 4,
-      "Unit": "pieces",
-      "Price_INR": 150,
-      "Stock": 15,
-      "Size": "standard"
-    },
-    {
-      "Name": "ऋतु फल (अन्य)",
-      "Company": "Fruit Seller",
-      "Category": "Fruit",
-      "Qty": 1,
-      "Unit": "kg",
-      "Price_INR": 100,
-      "Stock": 10,
-      "Size": "-"
-    },
-    {
-      "Name": "सूखा नारियल (गोला)",
-      "Company": "Local Shop",
-      "Category": "Dry Fruit",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 40,
-      "Stock": 10,
-      "Size": "standard"
-    },
-    {
-      "Name": "आम के पत्ते (पल्लव)",
-      "Company": "Vegetable Seller",
-      "Category": "Leaf",
-      "Qty": 5,
-      "Unit": "pieces",
-      "Price_INR": 20,
-      "Stock": 15,
-      "Size": "standard"
-    },
-    {
-      "Name": "तुलसी दल",
-      "Company": "Gardener",
-      "Category": "Leaf",
-      "Qty": 1,
-      "Unit": "bunch",
-      "Price_INR": 10,
-      "Stock": 30,
-      "Size": "small"
-    },
-    {
-      "Name": "कमल गट्टा",
-      "Company": "Local Shop",
-      "Category": "Seed",
-      "Qty": 10,
-      "Unit": "pieces",
-      "Price_INR": 50,
-      "Stock": 8,
-      "Size": "small"
-    },
-    {
-      "Name": "गेंदे के फूल (लूज)",
-      "Company": "Florist",
-      "Category": "Flower",
-      "Qty": 1,
-      "Unit": "bunch",
-      "Price_INR": 50,
-      "Stock": 15,
-      "Size": "-"
-    },
-    {
-      "Name": "गुलाब के फूल",
-      "Company": "Florist",
-      "Category": "Flower",
-      "Qty": 10,
-      "Unit": "pieces",
-      "Price_INR": 100,
-      "Stock": 10,
-      "Size": "standard"
-    },
-    {
-      "Name": "दुर्वा घास",
-      "Company": "Gardener",
-      "Category": "Grass",
-      "Qty": 1,
-      "Unit": "bunch",
-      "Price_INR": 20,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "शमी के पत्ते",
-      "Company": "Gardener",
-      "Category": "Leaf",
-      "Qty": 1,
-      "Unit": "bunch",
-      "Price_INR": 20,
-      "Stock": 5,
-      "Size": "small"
-    },
-    {
-      "Name": "चीनी/शक्कर",
-      "Company": "Branded/Local",
-      "Category": "Sweetener",
-      "Qty": 1,
-      "Unit": "kg",
-      "Price_INR": 45,
-      "Stock": 15,
-      "Size": "-"
-    },
-    {
-      "Name": "मिश्री (कैंडी)",
-      "Company": "Local Shop",
-      "Category": "Sweetener",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 70,
-      "Stock": 10,
-      "Size": "200g"
-    },
-    {
-      "Name": "सिक्के (कागज़/धातु)",
-      "Company": "Local Shop",
-      "Category": "Currency",
-      "Qty": 21,
-      "Unit": "pieces",
-      "Price_INR": 0,
-      "Stock": 0,
-      "Size": "standard"
-    },
-    {
-      "Name": "गुलाल/रंग",
-      "Company": "Local Shop",
-      "Category": "Colour",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 20,
-      "Stock": 30,
-      "Size": "50g"
-    },
-    {
-      "Name": "दर्पण (आईना)",
-      "Company": "Local Shop",
-      "Category": "Utility",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 50,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "कंघा (कंघी)",
-      "Company": "Local Shop",
-      "Category": "Utility",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 20,
-      "Stock": 15,
-      "Size": "standard"
-    },
-    {
-      "Name": "चूड़ियाँ (श्रृंगार)",
-      "Company": "Local Shop",
-      "Category": "Jewellery",
-      "Qty": 1,
-      "Unit": "set",
-      "Price_INR": 100,
-      "Stock": 5,
-      "Size": "standard"
-    },
-    {
-      "Name": "अबीर",
-      "Company": "Local Shop",
-      "Category": "Colour",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 20,
-      "Stock": 25,
-      "Size": "50g"
-    },
-    {
-      "Name": "तिल (काला)",
-      "Company": "Grain Shop",
-      "Category": "Havan",
-      "Qty": 1,
-      "Unit": "kg",
-      "Price_INR": 120,
-      "Stock": 5,
-      "Size": "-"
-    },
-    {
-      "Name": "हवन कुंड (अस्थायी)",
-      "Company": "Local Shop",
-      "Category": "Havan",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 100,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "आसन (बैठने के लिए)",
-      "Company": "Local Shop",
-      "Category": "Utility",
-      "Qty": 2,
-      "Unit": "pieces",
-      "Price_INR": 150,
-      "Stock": 5,
-      "Size": "standard"
-    },
-    {
-      "Name": "मिट्टी का पात्र (विसर्जन हेतु)",
-      "Company": "Matti Kalash",
-      "Category": "Mitti",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 50,
-      "Stock": 10,
-      "Size": "medium"
-    },
-    {
-      "Name": "पिस्ता",
-      "Company": "Dry Fruit Shop",
-      "Category": "Dry Fruit",
-      "Qty": 50,
-      "Unit": "gram",
-      "Price_INR": 150,
-      "Stock": 5,
-      "Size": "-"
-    },
-    {
-      "Name": "मखाना",
-      "Company": "Dry Fruit Shop",
-      "Category": "Dry Fruit",
-      "Qty": 100,
-      "Unit": "gram",
-      "Price_INR": 90,
-      "Stock": 8,
-      "Size": "-"
-    },
-    {
-      "Name": "पेड़ा/मिठाई",
-      "Company": "Sweet Shop",
-      "Category": "Sweet",
-      "Qty": 250,
-      "Unit": "gram",
-      "Price_INR": 150,
-      "Stock": 15,
-      "Size": "-"
-    },
-    {
-      "Name": "खसखस",
-      "Company": "Local Shop",
-      "Category": "Spice",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 50,
-      "Stock": 5,
-      "Size": "50g"
-    },
-    {
-      "Name": "जावित्री",
-      "Company": "Local Shop",
-      "Category": "Spice",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 70,
-      "Stock": 5,
-      "Size": "10g"
-    },
-    {
-      "Name": "जायफल",
-      "Company": "Local Shop",
-      "Category": "Spice",
-      "Qty": 5,
-      "Unit": "pieces",
-      "Price_INR": 50,
-      "Stock": 8,
-      "Size": "small"
-    },
-    {
-      "Name": "अष्टधातु मूर्ति",
-      "Company": "Handicraft",
-      "Category": "Idol",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 1500,
-      "Stock": 3,
-      "Size": "medium"
-    },
-    {
-      "Name": "शालिग्राम शिला",
-      "Company": "Local Shop",
-      "Category": "Stone",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 800,
-      "Stock": 2,
-      "Size": "small"
-    },
-    {
-      "Name": "कौड़ी",
-      "Company": "Local Shop",
-      "Category": "Shell",
-      "Qty": 11,
-      "Unit": "pieces",
-      "Price_INR": 40,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "पंचरत्न (5 प्रकार के रत्न)",
-      "Company": "Jewellery Shop",
-      "Category": "Gem",
-      "Qty": 1,
-      "Unit": "set",
-      "Price_INR": 1000,
-      "Stock": 5,
-      "Size": "small"
-    },
-    {
-      "Name": "सूप/छाज",
-      "Company": "Local Shop",
-      "Category": "Utility",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 150,
-      "Stock": 5,
-      "Size": "standard"
-    },
-    {
-      "Name": "नई झाड़ू",
-      "Company": "Local Shop",
-      "Category": "Utility",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 80,
-      "Stock": 10,
-      "Size": "standard"
-    },
-    {
-      "Name": "पंचधातु की अंगूठी",
-      "Company": "Jewellery Shop",
-      "Category": "Metal",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 500,
-      "Stock": 5,
-      "Size": "-"
-    },
-    {
-      "Name": "स्फटिक माला",
-      "Company": "Local Shop",
-      "Category": "Bead",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 200,
-      "Stock": 8,
-      "Size": "108 beads"
-    },
-    {
-      "Name": "आसन (ऊनी)",
-      "Company": "Cloth Shop",
-      "Category": "Utility",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 300,
-      "Stock": 5,
-      "Size": "standard"
-    },
-    {
-      "Name": "पीतल का स्टैंड (दीया के लिए)",
-      "Company": "Brasswork",
-      "Category": "Brass",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 200,
-      "Stock": 10,
-      "Size": "small"
-    },
-    {
-      "Name": "गाय के गोबर के उपले",
-      "Company": "Local Shop",
-      "Category": "Havan",
-      "Qty": 5,
-      "Unit": "pieces",
-      "Price_INR": 20,
-      "Stock": 15,
-      "Size": "small"
-    },
-    {
-      "Name": "मिट्टी का हाथी/घोड़ा",
-      "Company": "Matti Kalash",
-      "Category": "Mitti",
-      "Qty": 2,
-      "Unit": "pieces",
-      "Price_INR": 80,
-      "Stock": 8,
-      "Size": "small"
-    },
-    {
-      "Name": "गन्ने का रस",
-      "Company": "Local Shop",
-      "Category": "Liquid",
-      "Qty": 1,
-      "Unit": "liter",
-      "Price_INR": 50,
-      "Stock": 5,
-      "Size": "-"
-    },
-    {
-      "Name": "पंचगव्य (गोबर, गौमूत्र, दूध, दही, घी)",
-      "Company": "Home/Dairy",
-      "Category": "Puja",
-      "Qty": 1,
-      "Unit": "set",
-      "Price_INR": 0,
-      "Stock": 0,
-      "Size": "-"
-    },
-    {
-      "Name": "अक्षत कलश",
-      "Company": "Copperhub",
-      "Category": "Copper",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 450,
-      "Stock": 5,
-      "Size": "small"
-    },
-    {
-      "Name": "सप्तधान्य",
-      "Company": "Grain Shop",
-      "Category": "Grain",
-      "Qty": 1,
-      "Unit": "kg",
-      "Price_INR": 100,
-      "Stock": 10,
-      "Size": "-"
-    },
-    {
-      "Name": "पीली सरसों",
-      "Company": "Grain Shop",
-      "Category": "Spice",
-      "Qty": 100,
-      "Unit": "gram",
-      "Price_INR": 40,
-      "Stock": 10,
-      "Size": "-"
-    },
-    {
-      "Name": "तिल पापड़ी",
-      "Company": "Local Shop",
-      "Category": "Sweet",
-      "Qty": 1,
-      "Unit": "packet",
-      "Price_INR": 60,
-      "Stock": 10,
-      "Size": "200g"
-    },
-    {
-      "Name": "खीर (प्रसाद)",
-      "Company": "Home/Sweet Shop",
-      "Category": "Sweet",
-      "Qty": 1,
-      "Unit": "bowl",
-      "Price_INR": 0,
-      "Stock": 0,
-      "Size": "-"
-    },
-    {
-      "Name": "पंचमेवा (5 प्रकार के सूखे मेवे)",
-      "Company": "Dry Fruit Shop",
-      "Category": "Dry Fruit",
-      "Qty": 1,
-      "Unit": "set",
-      "Price_INR": 200,
-      "Stock": 10,
-      "Size": "-"
-    },
-    {
-      "Name": "हवन चम्मच",
-      "Company": "Copperhub",
-      "Category": "Copper",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 120,
-      "Stock": 10,
-      "Size": "standard"
-    },
-    {
-      "Name": "चौकी (लकड़ी की)",
-      "Company": "Wood Shop",
-      "Category": "Utility",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 500,
-      "Stock": 5,
-      "Size": "medium"
-    },
-    {
-      "Name": "लाल चुनरी",
-      "Company": "Cloth Shop",
-      "Category": "Fabric",
-      "Qty": 1,
-      "Unit": "piece",
-      "Price_INR": 150,
-      "Stock": 10,
-      "Size": "small"
-    },
-    ]
-    
-function loadItems() {
-    let html = `
-        <table border="1" style="width:100%; border-collapse:collapse;">
-            <tr>
-                <th>Name</th>
-                <th>Company</th>
-                <th>Category</th>
-                <th>Qty</th>
-                <th>Unit</th>
-                <th>Price (INR)</th>
-                <th>Stock</th>
-                <th>Size</th>
-            </tr>
-    `;
-
-    Puja_Samagri_List.forEach(item => {
-        html += `
-            <tr>
-                <td>${item.Name}</td>
-                <td>${item.Company}</td>
-                <td>${item.Category}</td>
-                <td>${item.Qty}</td>
-                <td>${item.Unit}</td>
-                <td>${item.Price_INR}</td>
-                <td>${item.Stock}</td>
-                <td>${item.Size}</td>
-            </tr>
-        `;
-    });
-
-    html += "</table>";
-    document.getElementById("itemsList").innerHTML = html;
-}
-
-window.onload = loadItems;
-
-
-  
 
 
 
