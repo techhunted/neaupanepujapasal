@@ -410,7 +410,7 @@
       #added-items-table td:nth-child(4) {
         display:none; 
       }
-      /* Login Box Padding on smallest screens */
+      /* FIX 1: Login Box Padding on smallest screens */
       .login-box {
           padding: 25px 20px;
           width: 95vw;
@@ -531,7 +531,7 @@
         max-height: none !important;
       }
 
-      /* Ensure QR code is always top-right (absolute within relative .invoice-box) */
+      /* FIX 2: Ensure QR code is always top-right (absolute within relative .invoice-box) */
       .invoice-qr {
           position: absolute !important; 
           right: 10px !important; /* Right Padding */
@@ -625,8 +625,9 @@
           <div id="cart-subtotal" class="cart-summary"><span class="cart-label">Subtotal:</span> ₹0</div>
           <div style="margin-bottom:9px;">
             <span class="cart-label">Discount:</span>
-            <input type="number" id="cart-discount" value="0" min="0" step="any" class="inline-input" style="width:50px;">
-            <select id="discount-type" class="inline-input" style="pointer-events: none; opacity: 0.8;">
+            <input type="number" id="cart-discount" value="0" min="0" max="100" step="any" class="inline-input" style="width:50px;">
+            <select id="discount-type" class="inline-input">
+              <option value="percent">%</option>
               <option value="fixed">₹</option>
             </select>
           </div>
@@ -885,6 +886,7 @@
       // Misc UI binds
       document.getElementById('process-payment-btn').onclick = showPaymentModal;
       document.getElementById('cart-discount').oninput = updateCartTotals;
+      document.getElementById('discount-type').onchange = updateCartTotals;
       document.getElementById('payment-method').onchange = e=>{ CART.paymentMethod=e.target.value;};
       document.getElementById('product-search').oninput = renderBillingProducts;
       document.getElementById('product-category').onchange = renderBillingProducts;
@@ -1028,30 +1030,16 @@
     function updateCartTotals() {
       let subt = CART.reduce((s,ci)=>s+ci.price*ci.qty, 0);
       document.getElementById('cart-subtotal').innerHTML = `<span class="cart-label">Subtotal:</span> ₹${subt.toFixed(2)}`;
-      
       let discount = parseFloat(document.getElementById('cart-discount').value) || 0;
-      
-      // LOGIC UPDATE: Always use fixed discount (Rupees)
-      let total = Math.max(subt - discount, 0);
-      
+      let dtype = document.getElementById('discount-type').value;
+      let total = dtype==="percent"? subt*(1-discount/100) : Math.max(subt-discount,0);
       document.getElementById('cart-total-amt').innerText = "₹"+(total.toFixed(2));
       document.getElementById('process-payment-btn').disabled = !(CART.length>0);
-      document.getElementById('discount-type').value = 'fixed'; // Ensure it's set to fixed
       CART.paymentMethod = document.getElementById('payment-method').value;
     }
 
     // ==== [PAYMENT POPUP] ====
     function showPaymentModal() {
-      // FIX: Ensure CART is not empty before opening modal
-      if (CART.length === 0) {
-        showToast("Cart is empty. Add items first.", "error");
-        return;
-      }
-      
-      let subtotal = CART.reduce((s,ci)=>s+ci.price*ci.qty,0);
-      let discount = parseFloat(document.getElementById('cart-discount').value)||0;
-      let total = Math.max(subtotal - discount, 0); // LOGIC UPDATE: Fixed Discount
-
       updModal(`
         <h3>Process Payment</h3>
         <form id="pay-form" onsubmit="event.preventDefault(); createInvoice()">
@@ -1063,11 +1051,11 @@
           <select id="pay-method">
             <option>Cash</option><option>Card</option><option>UPI</option><option>Other</option>
           </select>
-          <div class="summary-row"><span>Subtotal:</span> ₹${subtotal.toFixed(2)}</div>
+          <div class="summary-row"><span>Subtotal:</span> ₹${CART.reduce((s,ci)=>s+ci.price*ci.qty, 0).toFixed(2)}</div>
           <div class="summary-row"><span>Discount:</span>
-            <span>₹${discount.toFixed(2)}</span>
+            <span>${document.getElementById('cart-discount').value}${document.getElementById('discount-type').value==="percent"?"%":"₹"}</span>
           </div>
-          <div class="summary-row invoice-total">Grand Total: ₹<span id="modal-grand-total">${total.toFixed(2)}</span></div>
+          <div class="summary-row invoice-total">Grand Total: ₹<span id="modal-grand-total">...</span></div>
           <label>Pay Amount</label>
           <input type="number" id="pay-amt" placeholder="Amount Received">
           <div class="summary-row" id="modal-change-row"></div>
@@ -1077,6 +1065,11 @@
 
       // Update grand total in realtime
       setTimeout(()=>{
+        let discount = parseFloat(document.getElementById('cart-discount').value)||0;
+        let subtotal = CART.reduce((s,ci)=>s+ci.price*ci.qty,0);
+        let dtype = document.getElementById('discount-type').value;
+        let total = dtype==="percent"? subtotal*(1-discount/100) : Math.max(subtotal-discount,0);
+        document.getElementById('modal-grand-total').innerText = total.toFixed(2);
         document.getElementById('pay-amt').value = total.toFixed(2); // Auto-fill pay amount
         document.getElementById('pay-amt').oninput = ()=>{
           let pay = Number(document.getElementById('pay-amt').value)||0, change=0;
@@ -1103,11 +1096,8 @@
           phone = document.getElementById('pay-custphone').value;
       let subtotal = CART.reduce((s,ci)=>s+ci.price*ci.qty,0);
       let discount = parseFloat(document.getElementById('cart-discount').value)||0;
-      
-      // LOGIC UPDATE: Always use fixed discount
-      let total = Math.max(subtotal - discount, 0);
-      let dtype = 'fixed'; 
-
+      let dtype = document.getElementById('discount-type').value;
+      let total = dtype==="percent"? subtotal*(1-discount/100) : Math.max(subtotal-discount,0);
       let method = document.getElementById('pay-method').value;
       let payAmt = Number(document.getElementById('pay-amt').value)||0;
       let changeDue = (method==="Cash")?(payAmt-total):0;
@@ -1118,7 +1108,7 @@
         time: Date.now(),
         items: CART.map(c => ({ name: c.name, qty: c.qty, price: c.price, subtotal: c.qty * c.price, sku: c.sku, size: c.size || '' })),
         subtotal,
-        discountType: dtype, // fixed
+        discountType: dtype,
         discount,
         total: total,
         method,
@@ -1291,7 +1281,7 @@
         
         <div class="invoice-summary">
           <div>Subtotal: ₹${inv.subtotal.toFixed(2)}</div>
-          <div>Discount: ₹${inv.discount.toFixed(2)}</div> 
+          <div>Discount: ${inv.discountType==="percent"?inv.discount+"%":"₹"+inv.discount.toFixed(2)}</div>
           <div class="invoice-total">Grand Total: <b>₹${inv.total.toFixed(2)}</b></div>
           <div>Payment: ${inv.method}</div>
           
@@ -1939,3 +1929,4 @@ function deleteItem(itemId) {
   </script>
 </body>
 </html>
+
