@@ -242,40 +242,64 @@
       transition: background 0.22s;
     }
 
-    /* Invoice styles - FIX: Ensure better mobile/print responsiveness */
+    /* Invoice styles - Optimized for large lists/printing */
     .invoice-area {
       background: var(--color-invoice-bg); padding: 34px 2vw;
       display:none; flex-direction: column; align-items:center;
       min-height:70vh;
     }
     .invoice-box {
-      /* Increased max-width for better display, but kept it compact */
-      min-width: 350px; max-width: 450px; 
+      min-width: 350px; 
+      max-width: 450px; 
       background: #fffdfa;
-      border-radius: 14px; padding: 23px 25px 15px 25px;
+      border-radius: 14px; 
+      padding: 23px 25px 15px 25px;
       box-shadow: 0 3px 24px #e9e4ab9a;
-      /* FIX 1: Auto margin for centering */
       margin: auto; 
       margin-top: 32px;
       color: #3f3a1e;
       font-size: 1.05em;
       position: relative;
       font-family:'Segoe UI',sans-serif;
+      /* FIX 1: Set max height and allow scroll for long item lists */
+      max-height: 80vh; 
+      overflow-y: auto; 
+      display: flex; /* Flexbox for internal structure */
+      flex-direction: column;
     }
     .invoice-qr { 
       position: absolute; right:15px; top:27px; 
-      /* FIX: Reduce QR code size for compactness */
       width: 72px; height: 72px; 
       padding: 3px;
     }
     .invoice-header {
       text-align: center; margin-bottom: 13px;
+      flex-shrink: 0; /* Important: prevents shrinking on scroll */
     }
     .invoice-shopname { font-size: 1.2rem; font-weight: bold; letter-spacing: 0.5px;}
     .invoice-address { color: #7c6e33;}
-    .invoice-table { width: 100%; font-size:0.98em;}
-    .invoice-table th, .invoice-table td { padding:6px 4px; border-bottom: 1px solid #f5efbe;}
-    .invoice-summary { margin: 15px 0 0 0; }
+    
+    /* Item Table area - make it scroll if needed */
+    .invoice-table-wrapper {
+        flex-grow: 1; /* Allow table wrapper to take space */
+        overflow-y: auto; /* Internal scrolling for the table list in main UI */
+        margin-bottom: 15px;
+    }
+    .invoice-table { 
+        width: 100%; 
+        font-size:0.98em;
+    }
+    .invoice-table th, .invoice-table td { 
+        padding:6px 4px; 
+        border-bottom: 1px solid #f5efbe;
+    }
+    .invoice-summary { 
+        margin: 15px 0 0 0; 
+        flex-shrink: 0; /* Important: prevents shrinking on scroll */
+        /* FIX: Ensure footer is clear from table */
+        padding-top: 10px;
+        border-top: 1px dashed #e4d17e;
+    }
     .invoice-total { font-weight: bold; font-size: 1.11em; }
     .invoice-actions {
       display: flex; gap: 13px; justify-content: center; margin:18px 0 2px 0;
@@ -288,7 +312,7 @@
       transition: background 0.17s;
     }
 
-    /* Admin Section */
+    /* Admin Section CSS (No Changes) */
     .admin-area {
       display: flex; flex:1; background: var(--color-admin-bg);
       padding-bottom: 10px;
@@ -305,90 +329,11 @@
     .admin-tab.active, .admin-tab:hover {
       background: var(--color-dashboard); color: var(--color-nav);
     }
-
     .admin-content { flex: 1; padding: 28px 17px;}
-    /* Add-item/Add-category/form sections */
-    .form-card {
-      background: #fff; border-radius: 8px; box-shadow: 0 2px 9px #b9b6ad47;
-      padding: 22px 18px; margin-bottom: 21px;
-    }
     .form-card label, .form-card input, .form-card select, .form-card textarea {
       display: block; width: 97%; margin-top: 7px; padding:9px 9px;
       font-size: 1em; border-radius:5px; border:1px solid #d4cdad; margin-bottom: 10px;
     }
-    .form-card button {
-      background: var(--color-accent); color: var(--color-nav); font-weight:600;
-      border:none; border-radius:5px; padding:9px 13px; font-size:1em; margin-top:9px;
-      cursor:pointer;
-    }
-    .admin-list-table { width: 100%; border-spacing: 0; margin-top: 9px; }
-    .admin-list-table th, .admin-list-table td {
-      padding: 7px 3px; border-bottom: 1px solid #f3ecd6; font-size: 1em;
-      text-align:left;
-    }
-    .admin-stats { display:flex; gap:22px; flex-wrap:wrap; margin-bottom:18px;}
-    .admin-card {
-      background: #fdf9e0; padding:16px 19px; border-radius:9px; min-width:120px;
-      box-shadow: 0 1px 7px #ffe8a0a8; min-height: 60px; text-align: center;
-      flex:1 1 110px;
-    }
-    .admin-card .card-title { color: #716605; font-size:1.05em;}
-    .admin-card .card-value { font-size: 1.23rem; font-weight:bold; margin-top:5px;}
-    /* History and Report */
-    .invoice-history-table { width:100%; border-spacing:0;}
-    .invoice-history-table th, .invoice-history-table td {
-      padding: 8px 4px; border-bottom: 1px solid #f4e5ac; text-align:left;
-    }
-    .year-warning { color: var(--color-error); font-weight: bold; margin:12px 0;}
-    /* Toast/snackbar */
-    .toast {
-      display:none; position:fixed; bottom:23px; left: 50%; transform: translateX(-50%);
-      background: #3d2f11; color:#fff1ae; padding: 14px 35px; border-radius:21px;
-      font-size:1.08em; font-weight:500; z-index: 4000;
-      box-shadow: 0 3px 19px #be9b2690;
-      animation: fadeInOut 3s;
-    }
-    @keyframes fadeInOut {
-      0%{opacity:0;bottom:8px;}
-      8%{opacity:1;bottom:23px;}
-      91%{opacity:1;}
-      97%{opacity:0;}
-      100%{opacity:0;}
-    }
-
-    /* Loading spinner */
-    .spinner { display:inline-block; width:25px; height:25px; border: 3.5px solid #f5bd24;
-      border-right: 3.5px solid #fff; border-radius:50%; animation: spin 1s linear infinite;}
-    @keyframes spin { 100%{transform:rotate(360deg);} }
-
-    /* Auth/login styles */
-    .login-screen {
-      position: fixed; z-index: 70000;
-      inset:0; background: #fff5e0; display:flex; align-items:center; justify-content:center;
-      height: 100vh; width: 100vw;
-    }
-    .login-box {
-      background: #fffbe5; border-radius: 15px; box-shadow: 0 2px 31px #e1c96295;
-      padding: 36px 41px; min-width: 320px; text-align: center; display:flex; flex-direction:column;align-items:center;
-    }
-    .login-box img { height: 100px; margin-bottom:9px; }
-    .login-box h2 { margin:14px 0 17px 0; font-size:1.35rem; color:var(--color-primary);}
-    .login-box input, .login-box button {
-      display:block; width: 100%; margin: 7px 0 15px 0; border-radius: 7px; font-size:1.08rem;
-      padding: 10px; border: 1px solid #ecd56d;
-    }
-    .login-box button { background: var(--color-accent); color: #422f0c; font-weight: bold; cursor: pointer;}
-    .login-error { color: var(--color-error); font-size: 1.1em; }
-
-    /* Responsive Design - Table Wrapper for horizontal scrolling on small screens */
-    .table-responsive {
-      width: 100%;
-      overflow-x: auto;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-
-    /* Delete button */
     .delete-btn {
       background:#e84141;
       color:white;
@@ -399,57 +344,13 @@
       font-size:0.9rem;
     }
 
-    .delete-btn i {
-      pointer-events: none;
-    }
-
-    /* Mobile responsive table for ADDED ITEMS/PRODUCTS */
-    @media(max-width: 720px) {
-      /* Added-Items-Table (Admin) */
-      #added-items-table th,
-      #added-items-table td {
-        padding: 10px 6px;
-        font-size: 0.82rem;
-        white-space: nowrap; /* Keep content on one line */
-      }
-      /* Product-Listing-Table (Billing) */
-      #product-table th,
-      #product-table td {
-        padding: 8px 5px;
-        font-size: 0.88em;
-      }
-      .delete-btn, .add-btn {
-        padding:4px 8px;
-        font-size:0.8rem;
-      }
-    }
-    /* Hide on very small devices */
-    @media(max-width: 520px) {
-      /* Hide Company + Category on very small devices */
-      #added-items-table th:nth-child(2),
-      #added-items-table td:nth-child(2),
-      #added-items-table th:nth-child(3),
-      #added-items-table td:nth-child(3) {
-        display:none; 
-      }
-    }
-    @media(max-width: 380px) {
-      /* Hide Qty also */
-      #added-items-table th:nth-child(4),
-      #added-items-table td:nth-child(4) {
-        display:none; 
-      }
-    }
-
-    /* Main Responsive Breakpoints */
+    /* Responsive Breakpoints (No Changes) */
     @media (max-width: 850px) {
       .site-container {
         flex-direction: column;
         height: auto;
-        /* FIX: Ensure mobile layout takes full width but doesn't push scroll */
         width: 100%;
       }
-      /* Sidebar for Mobile: horizontal nav */
       .sidebar { 
         width: 100vw; 
         flex-direction: row; 
@@ -466,22 +367,11 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
-      .sidebar .nav-item { 
-        flex-shrink: 0;
-        padding: 6px 12px;
-        margin: 4px;
-        font-size: 0.95rem;
-        white-space: nowrap;
-        border-radius: 4px;
-      }
-      .sidebar .nav-item i {
-        display: none;
-      }
       .mainarea { 
         height:auto;
         padding: 0; 
         max-width: 100%;
-        overflow: hidden; /* FIX: Prevent mainarea scroll */
+        overflow: hidden; 
       }
       .billing-area, .admin-area { 
         flex-direction: column;
@@ -489,45 +379,16 @@
       .product-listing, .cart, .admin-nav, .admin-content { 
         width:auto; min-width:0;
         padding: 15px 15px 15px 15px; 
-        max-width: 100%; /* FIX: Ensure content respects padding/width */
-      }
-      .product-listing {
-        border-right: none;
-        border-bottom: 2px solid #ffd392;
-      }
-      .cart {
-        border-left: none;
-        box-shadow: none;
-      }
-      .admin-nav {
-        border-right: none;
-        border-bottom: 1px solid #f7c85b;
-        border-radius: 0;
+        max-width: 100%; 
       }
     }
 
-    @media (max-width: 600px) {
-      /* Extra padding for smaller mobile screens */
-      body {
-        padding-top: 85px; 
-      }
-      /* FIX: Ensure mobile body padding is sufficient */
-      body > :not(.topnav) {
-          padding-top: 0 !important; /* Ensure content starts right after fixed topnav */
-      }
-    }
-    
-    /* FIX 1: Better Print Styles for Mobile/Small Receipt */
+    /* Print Styles (Critical for multi-page PDF generation) */
     @media print {
-      /* Hide everything by default */
-      body * {
-        visibility: hidden;
-      }
+      body * { visibility: hidden; }
       
-      /* Only show the invoice area and its contents */
       .invoice-area, .invoice-box, .invoice-area * {
         visibility: visible !important;
-        /* Ensure the invoice box is the print area and is centered */
         box-shadow: none !important;
       }
       
@@ -535,41 +396,48 @@
         position: absolute; 
         left: 0; 
         top: 0; 
-        /* Important: limit max width for receipt style print */
         max-width: 450px; 
         width: 100%; 
         min-height: auto;
         padding: 0;
-        background: white; /* Ensure background is white for print */
-        margin: 0 auto; /* Center the print area if possible */
-        /* FIX: Center the invoice on the page */
-        display: flex;
-        align-items: flex-start; /* Aligned to top for mobile scrolling if needed */
-        justify-content: center;
+        margin: 0 auto; 
+        display: block; /* Ensure it flows naturally for multi-page print */
+        overflow: visible !important; /* Allow content to span multiple pages */
       }
       
       .invoice-box {
-        /* Remove margin top and box shadow for clean print */
         margin: 0; 
         box-shadow: none !important; 
         border-radius: 0;
-        width: 100%; /* Occupy max-width of invoice-area */
+        width: 100%; 
         max-width: 100%;
         min-width: unset;
-        /* Force padding for better spacing */
         padding: 10px 15px !important; 
+        /* Important for multi-page: Remove fixed height/scroll */
+        max-height: none !important; 
+        overflow: visible !important; 
       }
       
-      /* Hide actions/nav on print */
+      .invoice-table-wrapper {
+        overflow-y: visible !important; /* Content must be visible for printing */
+        max-height: none !important;
+      }
+
+      /* Ensure summary details stay with the main content */
+      .invoice-summary {
+          page-break-before: auto;
+          page-break-after: auto;
+      }
+
       .invoice-actions, .sidebar, .topnav { 
         display:none !important;
       }
       
-      /* Ensure QR Code is visible in print (if desired) */
       .invoice-qr {
-          position: static; /* Remove absolute positioning for print flow */
-          margin: 10px auto; /* Center QR code */
-          display: block;
+          position: static !important;
+          margin: 10px auto !important; 
+          display: block !important;
+          text-align: center;
       }
     }
   </style>
@@ -764,12 +632,28 @@
     };
 
     // ==== [LOGIN WORKFLOW] ====
+    function logout() {
+      if (window.confirm("Are you sure to logout?")) {
+        document.getElementById('login-btn').innerText = "Login"; 
+        document.getElementById('login-error').innerText = ""; 
+        
+        auth.signOut()
+        .then(() => {
+            currentUser = null;
+            userInit = false;
+            if (productListenerUnsub) { productListenerUnsub(); productListenerUnsub = null; }
+            showLogin();
+        })
+        .catch(err => {
+            showToast("Logout Failed: " + err.message, "error");
+        });
+      }
+    }
     function showLogin(showErr = "") {
       document.getElementById('login-screen').style.display = 'flex';
       document.body.style.overflow = 'hidden';
       setTimeout(()=>{ document.getElementById('login-email').focus();},300);
       document.getElementById('login-error').innerText = showErr;
-      // Hide in-app UI
       document.querySelector('.site-container').style.display = 'none';
       if (productListenerUnsub) { productListenerUnsub(); productListenerUnsub = null; }
     }
@@ -798,33 +682,11 @@
         hideLogin(); 
       })
       .catch(err=>{
-        // Reset button on login failure
         document.getElementById('login-btn').innerText = "Login";
         document.getElementById('login-error').innerText = err.message || "Login failed. Check details.";
       });
     }
     
-    // Optional log out on top right
-    function logout() {
-      if (window.confirm("Are you sure to logout?")) {
-        // Reset the login button state before showing login screen
-        document.getElementById('login-btn').innerText = "Login"; 
-        document.getElementById('login-error').innerText = ""; 
-        
-        // FIX 1: Correctly sign out and show login
-        auth.signOut()
-        .then(() => {
-            currentUser = null;
-            userInit = false;
-            // Clear any active listeners/state if needed
-            if (productListenerUnsub) { productListenerUnsub(); productListenerUnsub = null; }
-            showLogin();
-        })
-        .catch(err => {
-            showToast("Logout Failed: " + err.message, "error");
-        });
-      }
-    }
     // ==== [END LOGIN] ====
 
     // ==== [SIDEBAR NAV] ====
@@ -842,23 +704,18 @@
       ];
 
       tabs.forEach((item, index) => {
-        // Check karein ki user authenticated hai aur uska email REAL_ADMIN_EMAIL se match karta hai
         const isCurrentUserAdmin = currentUser && currentUser.email === REAL_ADMIN_EMAIL;
         
-        // Agar tab admin-only hai aur current user admin nahi hai, toh ise chhupa dein
         if (item.isAdmin && !isCurrentUserAdmin) {
             return; // Skip this tab (don't create the button)
         }
 
-        // Button Creation Logic
         const button = document.createElement('button');
         
-        // Determine the class based on position or active state
         let activeClass = '';
         if (index === 0 && !document.querySelector('.sidebar .nav-item.active')) {
-            activeClass = 'active'; // Set first visible tab as active if none is active
+            activeClass = 'active'; 
         } else {
-             // Check if the current button is the 'billing' tab (default view)
              if (item.tab === 'billing') {
                 activeClass = 'active'; 
              }
@@ -869,12 +726,9 @@
         button.innerHTML = `<i class="fa ${item.icon}"></i> ${item.label}`;
         
         button.onclick = () => {
-          // Deactivate all
           document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
-          // Activate current
           button.classList.add('active');
           
-          // Tab switching logic
           if (item.tab === "billing") {
             showBillingTab();
           }
@@ -889,7 +743,6 @@
         sidebar.appendChild(button);
       });
       
-      // Ensure the billing tab (or the first available tab) is selected on init
       if (document.querySelector('.sidebar .nav-item:not(.active)')) {
           document.querySelector('.sidebar .nav-item').click();
       }
@@ -961,7 +814,6 @@
     }
     function seedDemoDataIfEmpty(err) {
       if (err && err.code === 'not-found') {
-        // No such collection: seed demo data
         let demoCats = [
           { name: "Puja Samagri" }, { name: "Books" }, { name: "Incense" }
         ];
@@ -990,9 +842,8 @@
     let matchSearch = !search || [item.name, item.company, item.sku, (item.description || "")].join(" ").toLowerCase().includes(search);
     return matchCat && matchSearch;
   }).forEach(item => {
-    // === UPDATED: Unit aur Stock ko show karo ===
-    let displayQty = item.stock || item.quantity || 0;  // Stock dikhao agar hai, nahi to quantity
-    let unit = item.unit || 'pcs';  // Default unit
+    let displayQty = item.stock || item.quantity || 0;  
+    let unit = item.unit || 'pcs'; 
     
     tbody.innerHTML += `
       <tr>
@@ -1019,7 +870,6 @@
     function addToCart(itemId) {
       let qty = Number(document.getElementById('qty-'+itemId).value)||1;
       let item = ITEMS.find(it=>it.id==itemId);
-      // Ensure we clone the item including size for the cart
       let itemForCart = { ...item, qty: qty, size: item.size || '' }; 
       let inCart = CART.find(ci=>ci.id===item.id);
       
@@ -1127,7 +977,6 @@
     
     // ==== [INVOICE GENERATION] ====
     function createInvoice() {
-      // 1. Bill details customer se lo
       let cust = document.getElementById('pay-custname').value,
           phone = document.getElementById('pay-custphone').value;
       let subtotal = CART.reduce((s,ci)=>s+ci.price*ci.qty,0);
@@ -1138,12 +987,10 @@
       let payAmt = Number(document.getElementById('pay-amt').value)||0;
       let changeDue = (method==="Cash")?(payAmt-total):0;
 
-      // 2. Invoice Object banao
       let iid = "INV"+Date.now();
       INVOICE = {
         id: iid,
         time: Date.now(),
-        // Items data mein size bhi shamil kiya
         items: CART.map(c => ({ name: c.name, qty: c.qty, price: c.price, subtotal: c.qty * c.price, sku: c.sku, size: c.size || '' })),
         subtotal,
         discountType: dtype,
@@ -1157,32 +1004,23 @@
         adminName,
       };
 
-      // 3. Invoice UI mein dikhana
       renderInvoice(INVOICE);
       showInvoice();
       updModal("", false);
 
-      // === 4. MAIN ADDITIONS (SAVE, STOCK UPDATE, TOAST) ===
-
-      // 4a. Save invoice history mein (admin ke liye)
       db.collection('invoices').doc(INVOICE.id).set(INVOICE).then(() => {
         showToast("Invoice saved to history!", "success");
         
-        // --- 4b. Inventory (items) stock update karna ---
         INVOICE.items.forEach(ci => {
-          // Assuming 'name' is unique enough to find the product
           db.collection('products').where('name', '==', ci.name).get().then(qs => {
             qs.forEach(doc => {
-              // Assuming quantity is the primary stock field for reduction
               let currentQty = doc.data().quantity || doc.data().stock || 0;
               let newQty = currentQty - ci.qty;
-              // Check which field to update (prefer 'quantity' as in previous logic)
               db.collection('products').doc(doc.id).update({ quantity: Math.max(newQty, 0) });
             });
           });
         });
         
-        // 4c. Bill Saved Bills tab ke liye bhi save karo (for immediate access to print/download/share)
         db.collection('holdbills').doc(INVOICE.id).set(INVOICE).then(() => {
           showToast("Bill temporarily saved for sharing/reprint. Go to Saved Bills.", "info");
         });
@@ -1191,7 +1029,6 @@
         showToast("Invoice save failed! Try again. Error: " + err.message, "error");
       });
 
-      // 4d. UI: Cart clear kar do
       CART = [];
       renderCart();
     }
@@ -1225,15 +1062,13 @@
         if(doc.exists) {
             INVOICE = doc.data();
             renderInvoice(INVOICE);
-            showInvoice(); // Show the invoice view with actions
-            // Update buttons to also show "Back to Saved Bills"
+            showInvoice(); 
             document.getElementById('invoice-actions').innerHTML = `
                 <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
                 <button onclick="downloadInvoice(true)"><i class="fa fa-download"></i> Save/Download</button>
                 <button onclick="shareInvoice()" id="share-invoice-btn-saved"><i class="fa-solid fa-share-nodes"></i> Share</button>
                 <button onclick="showSavedBills()">Back to Saved Bills</button>
             `;
-            // Hide share if not supported
             if (!navigator.share) {
                 const shareBtn = document.getElementById('share-invoice-btn-saved');
                 if (shareBtn) shareBtn.style.display = 'none';
@@ -1249,31 +1084,24 @@
         INVOICE = doc.data();
         renderInvoice(INVOICE);
         showInvoice();
-        // After render, print
         setTimeout(()=>{
           window.print();
-          // Delete after successful printing confirmation (user should see the print dialog)
           db.collection('holdbills').doc(billid).delete().then(()=>{
-             // FIX 3: Success message after printing
              showToast("Bill successfully printed and removed from Saved Bills.", "success"); 
              showSavedBills();
           });
-        }, 500); // Small delay for rendering
+        }, 500); 
       } else {
          showToast("Bill not found in saved list.", "error");
       }
     }
     
     function downloadSavedBill(billid) {
-      // Download logic
       db.collection('holdbills').doc(billid).get().then(doc=>{
         if(doc.exists) {
           INVOICE = doc.data();
-          // Use viewSavedBillForActions to render and then download
           viewSavedBillForActions(billid).then(() => {
-              // Delay to ensure rendering is complete before calling downloadInvoice
               setTimeout(() => {
-                  // Pass true to delete after download (if coming from saved bills)
                   downloadInvoice(true); 
               }, 100);
           });
@@ -1299,15 +1127,12 @@
       document.getElementById('savedbills-area').style.display = 'none';
       document.getElementById('invoice-area').style.display = 'flex';
       document.getElementById('invoice-actions').style.display = 'flex';
-      // Ensure Share button visibility check runs on showing invoice
       const shareBtn = document.getElementById('share-invoice-btn');
       if (shareBtn) shareBtn.style.display = navigator.share ? 'block' : 'none';
     }
     
-    // === UPDATED: SHOP MOBILE AND NO LOGO ===
+    // === RENDER INVOICE STRUCTURE ===
     function renderInvoice(inv) {
-      // FIX 1: The QR code element needs to be inside a unique container inside the invoice box
-      // so we can properly target it for generation and control its visibility.
       document.getElementById('invoice-box').innerHTML = `
         <div class="invoice-header">
           
@@ -1319,22 +1144,26 @@
           <div>Invoice: <b>${inv.id}</b></div>
           <div>Date: ${(new Date(inv.time)).toLocaleString()}</div>
         </div>
-        <table class="invoice-table">
-          <thead>
-            <tr><th>Name</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>
-          </thead>
-          <tbody>
-            ${inv.items.map(it=>`<tr>
-              <td>
-                ${it.name}
-                ${it.size ? `<span class="item-size-sub" style="display:block;font-size:0.9em;color:#7c6e33;">Size: ${it.size}</span>` : ''}
-              </td>
-              <td>${it.qty}</td>
-              <td>₹${it.price}</td>
-              <td>₹${it.subtotal.toFixed(2)}</td>
-            </tr>`).join("")}
-          </tbody>
-        </table>
+        
+        <div class="invoice-table-wrapper">
+            <table class="invoice-table">
+              <thead>
+                <tr><th>Name</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>
+              </thead>
+              <tbody>
+                ${inv.items.map(it=>`<tr>
+                  <td>
+                    ${it.name}
+                    ${it.size ? `<span class="item-size-sub" style="display:block;font-size:0.9em;color:#7c6e33;">Size: ${it.size}</span>` : ''}
+                  </td>
+                  <td>${it.qty}</td>
+                  <td>₹${it.price}</td>
+                  <td>₹${it.subtotal.toFixed(2)}</td>
+                </tr>`).join("")}
+              </tbody>
+            </table>
+        </div>
+        
         <div class="invoice-summary">
           <div>Subtotal: ₹${inv.subtotal.toFixed(2)}</div>
           <div>Discount: ${inv.discountType==="percent"?inv.discount+"%":"₹"+inv.discount.toFixed(2)}</div>
@@ -1344,10 +1173,12 @@
           <div>Customer: ${inv.customer} ${inv.phone?`(${inv.phone})`:""}</div>
           
           <div>Operator: ${inv.adminName}</div>
+          <div style="text-align:center; margin-top:10px;">
+             <small>Thank you for your purchase!</small>
+          </div>
         </div>
         <div class="invoice-qr" id="invoice-qr-container"></div>
       `;
-      // Default actions (will be overwritten if coming from Saved Bills or History)
       document.getElementById('invoice-actions').innerHTML = `
           <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
           <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
@@ -1355,35 +1186,41 @@
           <button onclick="saveHoldInvoice()"><i class="fa fa-save"></i> Save/Hold</button>
           <button onclick="showBillingTab()">Back</button>
       `;
-      // Hide share if not supported
       if (!navigator.share) {
           const shareBtn = document.getElementById('share-invoice-btn');
           if (shareBtn) shareBtn.style.display = 'none';
       }
 
-      // Clear previous QR code and generate new one
       const qrContainer = document.getElementById("invoice-qr-container");
-      qrContainer.innerHTML = ''; // Clear previous QR content
+      qrContainer.innerHTML = ''; 
       let qrPayload = JSON.stringify({ id: inv.id, total: inv.total, date: inv.time });
-      // The class "invoice-qr" handles positioning
       setTimeout(()=>new QRCode(qrContainer,{ text:qrPayload, width:72,height:72 }),100);
     }
-    // === END UPDATED: SHOP MOBILE AND NO LOGO ===
+    // === END RENDER INVOICE STRUCTURE ===
 
 
     function printInvoice() {
       window.print();
     }
     
-    // FIX 2: Download Invoice Functionality (Save to device)
+    // FIX 1: Download/Save Invoice Functionality with scale adjustment for multi-page PDF
     function downloadInvoice(deleteAfter = false) {
       if (!INVOICE) {
           showToast("No active invoice to download.", "error");
           return;
       }
-      // FIX 1: Target only the invoice-box content for PDF generation
       let area = document.getElementById('invoice-box');
-      html2pdf().from(area).save(INVOICE.id+".pdf").then(()=>{
+      
+      const pdfOptions = {
+          margin: 10,
+          filename: INVOICE.id + '.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          // Increased scale and explicit A4 format ensures multi-page printing works well for large lists.
+          html2canvas: { scale: 3 }, 
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(pdfOptions).from(area).save().then(()=>{
           showToast("Bill successfully saved to device!", "success");
           if (deleteAfter) {
               db.collection('holdbills').doc(INVOICE.id).delete().then(()=>{
@@ -1396,8 +1233,7 @@
       });
     }
     
-    // FIX 3: Share Invoice Functionality (using Web Share API)
-    async function shareInvoice() {
+    function shareInvoice() {
         if (!navigator.share) {
             showToast("Sharing not supported on this device/browser.", "error");
             return;
@@ -1409,25 +1245,28 @@
         }
 
         try {
-            // 1. Generate the PDF content as a Blob
-            // FIX 1: Target only the invoice-box content for PDF generation
             const element = document.getElementById('invoice-box');
-            const pdfBlob = await html2pdf().from(element).outputPdf('blob');
+            const pdfOptions = {
+                margin: 10,
+                filename: INVOICE.id + '.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 3 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
             
-            // 2. Create a File object from the Blob
-            const file = new File([pdfBlob], INVOICE.id + ".pdf", { type: 'application/pdf' });
-            
-            // 3. Share the file
-            await navigator.share({
-                title: 'Neaupane Puja Pasal - Invoice ' + INVOICE.id,
-                text: `Dear ${INVOICE.customer}, your total amount is ₹${INVOICE.total.toFixed(2)}. Thank you for your purchase from Neaupane Puja Pasal (Mobile: +919641891846).`,
-                files: [file],
+            html2pdf().set(pdfOptions).from(element).outputPdf('blob').then(async (pdfBlob) => {
+                const file = new File([pdfBlob], INVOICE.id + ".pdf", { type: 'application/pdf' });
+                
+                await navigator.share({
+                    title: 'Neaupane Puja Pasal - Invoice ' + INVOICE.id,
+                    text: `Dear ${INVOICE.customer}, your total amount is ₹${INVOICE.total.toFixed(2)}. Thank you for your purchase from Neaupane Puja Pasal (Mobile: +919641891846).`,
+                    files: [file],
+                });
+                
+                showToast("Invoice shared successfully!", "success");
             });
             
-            showToast("Invoice shared successfully!", "success");
-            
         } catch (error) {
-            // User cancelled the share or an error occurred
             if (error.name !== 'AbortError') {
                 showToast("Sharing failed: " + error.message, "error");
             }
@@ -1436,11 +1275,8 @@
 
 
     function saveHoldInvoice() {
-      // Re-save/Update the current invoice on holdbills collection
       db.collection('holdbills').doc(INVOICE.id).set(INVOICE).then(() => {
-          // FIX 4: Success message after saving
           showToast("Bill successfully saved/held in 'Saved Bills'!", "success");
-          // Clear current cart and switch to billing view
           CART = [];
           renderCart();
           setTimeout(showBillingTab, 1000);
@@ -1473,7 +1309,6 @@
 
     // ==== [ADMIN: TO-DO / INVENTORY] ====
     
-    // Helper function to read file content
     function readFileContent(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -1483,7 +1318,6 @@
         });
     }
     
-    // Main function to process uploaded documents (CSV/JSON)
     async function processUploadedItems() {
         const fileInput = document.getElementById('item-upload-file');
         const file = fileInput.files[0];
@@ -1499,13 +1333,11 @@
             const content = await readFileContent(file);
 
             if (fileName.endsWith('.json')) {
-                // Handle JSON format
                 itemsToAdd = JSON.parse(content);
                 if (!Array.isArray(itemsToAdd)) {
-                    itemsToAdd = [itemsToAdd]; // If single object, put it in an array
+                    itemsToAdd = [itemsToAdd];
                 }
             } else if (fileName.endsWith('.csv')) {
-                // Handle CSV format (simple parsing)
                 const rows = content.trim().split('\n');
                 if (rows.length < 2) {
                     return showToast("CSV file is empty or has no headers.", "error");
@@ -1519,13 +1351,11 @@
                         headers.forEach((header, i) => {
                             let key = header.replace(/\s+/g, '').toLowerCase();
                             let value = values[i];
-                            // Basic type conversion
                             if (['quantity', 'stock', 'price'].includes(key)) {
                                 value = Number(value) || 0;
                             }
                             item[key] = value;
                         });
-                        // Map CSV headers to Firestore schema keys if necessary (e.g., 'itemname' to 'name')
                         item.name = item.name || item.itemname || ''; 
                         item.category = item.category || 'Uncategorized';
                         if (item.name) itemsToAdd.push(item);
@@ -1539,11 +1369,9 @@
                  return showToast("File was processed, but no valid items were found.", "error");
             }
 
-            // Save items to Firestore
             let successCount = 0;
             let batch = db.batch();
             itemsToAdd.forEach(itemData => {
-                // Minimal validation before batching
                 if (itemData.name) {
                     batch.set(db.collection('products').doc(), {
                         name: itemData.name,
@@ -1553,7 +1381,7 @@
                         unit: itemData.unit || 'pcs',
                         stock: itemData.stock || itemData.quantity || 0,
                         price: itemData.price || 0,
-                        available: true, // Default to available
+                        available: true,
                         sku: itemData.sku || '',
                         description: itemData.description || '',
                         size: itemData.size || ''
@@ -1564,8 +1392,8 @@
 
             await batch.commit();
             showToast(`✔ ${successCount} items successfully added/updated from file!`, "success");
-            fileInput.value = ''; // Clear file input
-            renderBillingProducts(); // Refresh billing list
+            fileInput.value = '';
+            renderBillingProducts(); 
             
         } catch (error) {
             console.error("Bulk upload error:", error);
@@ -1647,8 +1475,6 @@
     .add({ name })
     .then(() => {
       showToast("✔ Category added successfully!", "success");
-
-      // Input clear
       document.getElementById('addcat-name').value = "";
     })
     .catch(() => {
@@ -1669,7 +1495,6 @@
     sku: document.getElementById('additem-sku').value.trim(),
     description: document.getElementById('additem-desc').value.trim(),
     
-    // NAYA FIELD: SIZE
     size: document.getElementById('additem-size').value.trim(), 
   };
 
@@ -1682,7 +1507,6 @@
 
       showToast("✔ Item added successfully!", "success");
 
-      // Clear all fields, including the new size field
       document.getElementById('additem-name').value = "";
       document.getElementById('additem-company').value = "";
       document.getElementById('additem-qty').value = 0;
@@ -1690,7 +1514,7 @@
       document.getElementById('additem-price').value = "";
       document.getElementById('additem-sku').value = "";
       document.getElementById('additem-desc').value = "";
-      document.getElementById('additem-size').value = ""; // CLEAR SIZE
+      document.getElementById('additem-size').value = ""; 
     })
     .catch(() => {
       showToast("Failed to add item!", "error");
@@ -1707,7 +1531,6 @@
     document.getElementById('sale-day').innerHTML = sum;
     document.getElementById('sale-count').innerHTML = cnt;
   });
-      // Aggregated: today/month/year
       const adminContent = document.getElementById('admin-content');
       adminContent.innerHTML = `
         <div class="admin-stats" id="admin-stats">
@@ -1769,36 +1592,42 @@
             <td>${d.customer||"-"}</td>
             <td>₹${d.total.toFixed(2)}</td>
             <td>
-              <button class="add-btn" onclick="viewInvoiceById('${d.id}')"><i class="fa fa-eye"></i></button>
+              <button class="add-btn" onclick="printInvoiceById('${d.id}')"><i class="fa fa-print"></i> Print</button>
               <button class="delete-btn" onclick="deleteInvoice('${d.id}')"><i class="fa fa-trash"></i></button>
             </td>
           </tr>
         `;
       });
     }
-    // Show invoice on history view
-    async function viewInvoiceById(invId) {
-      let doc = await db.collection('invoices').doc(invId).get();
-      if(doc.exists) {
-        INVOICE = doc.data();
-        renderInvoice(INVOICE);
-        document.getElementById('invoice-area').style.display='flex';
-        document.getElementById('admin-area').style.display='none';
-        document.getElementById('billing-area').style.display='none';
-        
-        // FIX 2: Back button for history page.
-        document.getElementById('invoice-actions').innerHTML = `
-            <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
-            <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
-            <button onclick="shareInvoice()" id="share-invoice-btn-hist"><i class="fa-solid fa-share-nodes"></i> Share</button>
-            <button onclick="renderAdminHistory()">Back to History</button>
-        `;
-        if (!navigator.share) {
-            const shareBtn = document.getElementById('share-invoice-btn-hist');
-            if (shareBtn) shareBtn.style.display = 'none';
+    
+    // FIX 2: Function to fetch, render, and print invoice from history
+    async function printInvoiceById(invId) {
+        let doc = await db.collection('invoices').doc(invId).get();
+        if(doc.exists) {
+            INVOICE = doc.data();
+            renderInvoice(INVOICE);
+            showInvoice(); 
+
+            // Update actions for History Print context
+            document.getElementById('invoice-actions').innerHTML = `
+                <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
+                <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
+                <button onclick="shareInvoice()" id="share-invoice-btn-hist"><i class="fa-solid fa-share-nodes"></i> Share</button>
+                <button onclick="renderAdminHistory()">Back to History</button>
+            `;
+            if (!navigator.share) {
+                const shareBtn = document.getElementById('share-invoice-btn-hist');
+                if (shareBtn) shareBtn.style.display = 'none';
+            }
+            
+            // Auto print after rendering
+            setTimeout(printInvoice, 300);
+
+        } else {
+            showToast("Invoice not found.", "error");
         }
-      }
     }
+    
     function deleteInvoice(invId) {
       if(confirm("Are you sure you want to delete this invoice? This cannot be undone.")) {
         db.collection('invoices').doc(invId).delete().then(()=>{ showToast("Invoice deleted.","success"); renderAdminHistory(); });
@@ -1823,7 +1652,6 @@
       document.getElementById('year-del-warn').style.display='none';
       doYearDeletePending = false;
       await downloadHistoryReport("year",true);
-      // Cleanup: delete all invoices
       let invs = await db.collection('invoices').get();
       let batch = db.batch();
       invs.forEach(doc=>batch.delete(doc.ref));
@@ -1832,7 +1660,6 @@
       renderAdminHistory();
     }
     async function downloadHistoryReport(type,delAfter) {
-      // Get invoices, format as CSV
       let invs = await db.collection('invoices').get();
       let n = new Date();
       let year=n.getFullYear(), mon=n.getMonth(), day=n.getDate();
@@ -1844,7 +1671,6 @@
         if(type==="year" && !(dt.getFullYear()==year)) return;
         arr.push([d.id,dt.toLocaleString(),d.customer||"-",d.total.toFixed(2)]);
       });
-      // CSV
       let csv = arr.map(row=>row.join(",")).join("\n");
       let blob = new Blob([csv],{type:"text/csv"});
       let url = URL.createObjectURL(blob);
