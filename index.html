@@ -254,13 +254,20 @@
       background: #fffdfa;
       border-radius: 14px; padding: 23px 25px 15px 25px;
       box-shadow: 0 3px 24px #e9e4ab9a;
-      margin: auto; margin-top: 32px;
+      /* FIX 1: Auto margin for centering */
+      margin: auto; 
+      margin-top: 32px;
       color: #3f3a1e;
       font-size: 1.05em;
       position: relative;
       font-family:'Segoe UI',sans-serif;
     }
-    .invoice-qr { position: absolute; right:15px; top:27px; }
+    .invoice-qr { 
+      position: absolute; right:15px; top:27px; 
+      /* FIX: Reduce QR code size for compactness */
+      width: 72px; height: 72px; 
+      padding: 3px;
+    }
     .invoice-header {
       text-align: center; margin-bottom: 13px;
     }
@@ -510,7 +517,7 @@
       }
     }
     
-    /* FIX 2: Better Print Styles for Mobile/Small Receipt */
+    /* FIX 1: Better Print Styles for Mobile/Small Receipt */
     @media print {
       /* Hide everything by default */
       body * {
@@ -535,6 +542,10 @@
         padding: 0;
         background: white; /* Ensure background is white for print */
         margin: 0 auto; /* Center the print area if possible */
+        /* FIX: Center the invoice on the page */
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       
       .invoice-box {
@@ -542,7 +553,7 @@
         margin: 0; 
         box-shadow: none !important; 
         border-radius: 0;
-        width: auto;
+        width: 100%; /* Occupy max-width of invoice-area */
         max-width: 100%;
         min-width: unset;
         /* Force padding for better spacing */
@@ -550,10 +561,15 @@
       }
       
       /* Hide actions/nav on print */
-      .invoice-actions, .sidebar, .topnav, 
-      /* Hide QR code on print to save space if needed, otherwise reduce size */
-      .invoice-qr { 
+      .invoice-actions, .sidebar, .topnav { 
         display:none !important;
+      }
+      
+      /* Ensure QR Code is visible in print (if desired) */
+      .invoice-qr {
+          position: static; /* Remove absolute positioning for print flow */
+          margin: 10px auto; /* Center QR code */
+          display: block;
       }
     }
   </style>
@@ -655,8 +671,10 @@
           </div>
         <div class="invoice-actions" id="invoice-actions">
           <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
-          <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Download</button>
+          <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
+          <button onclick="shareInvoice()" id="share-invoice-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
           <button onclick="saveHoldInvoice()"><i class="fa fa-save"></i> Save/Hold</button>
+          <button onclick="showBillingTab()">Back</button>
         </div>
       </div>
       <div id="savedbills-area" style="display:none; padding: 20px;">
@@ -737,6 +755,12 @@
       document.getElementById('login-password').addEventListener('keypress', e=>{if(e.key==='Enter')loginUser();});
       document.getElementById('login-email').addEventListener('keypress', e=>{if(e.key==='Enter')loginUser();});
       document.getElementById('login-logo').src = document.getElementById('shop-logo').src; // Load logo on login screen
+      
+      // Check if Web Share API is supported and update button visibility
+      if (!navigator.share) {
+          const shareBtn = document.getElementById('share-invoice-btn');
+          if (shareBtn) shareBtn.style.display = 'none';
+      }
     };
 
     // ==== [LOGIN WORKFLOW] ====
@@ -1021,7 +1045,7 @@
               <input type="number" class="inline-input" min="1" max="${ci.quantity}" value="${ci.qty}" onchange="cartQtyChange(${i},this.value)">
             </td>
             <td>₹${ci.price}</td>
-            <td>₹${ci.qty*ci.price}</td>
+            <td>₹${(ci.qty*ci.price).toFixed(2)}</td>
             <td>
               <button class="add-btn" style="background:#ed5a5a;" onclick="removeCartItem(${i})"><i class="fa fa-trash"></i></button>
             </td>
@@ -1040,7 +1064,7 @@
     }
     function updateCartTotals() {
       let subt = CART.reduce((s,ci)=>s+ci.price*ci.qty, 0);
-      document.getElementById('cart-subtotal').innerHTML = `<span class="cart-label">Subtotal:</span> ₹${subt}`;
+      document.getElementById('cart-subtotal').innerHTML = `<span class="cart-label">Subtotal:</span> ₹${subt.toFixed(2)}`;
       let discount = parseFloat(document.getElementById('cart-discount').value) || 0;
       let dtype = document.getElementById('discount-type').value;
       let total = dtype==="percent"? subt*(1-discount/100) : Math.max(subt-discount,0);
@@ -1062,7 +1086,7 @@
           <select id="pay-method">
             <option>Cash</option><option>Card</option><option>UPI</option><option>Other</option>
           </select>
-          <div class="summary-row"><span>Subtotal:</span> ₹${CART.reduce((s,ci)=>s+ci.price*ci.qty, 0)}</div>
+          <div class="summary-row"><span>Subtotal:</span> ₹${CART.reduce((s,ci)=>s+ci.price*ci.qty, 0).toFixed(2)}</div>
           <div class="summary-row"><span>Discount:</span>
             <span>${document.getElementById('cart-discount').value}${document.getElementById('discount-type').value==="percent"?"%":"₹"}</span>
           </div>
@@ -1081,11 +1105,14 @@
         let dtype = document.getElementById('discount-type').value;
         let total = dtype==="percent"? subtotal*(1-discount/100) : Math.max(subtotal-discount,0);
         document.getElementById('modal-grand-total').innerText = total.toFixed(2);
+        document.getElementById('pay-amt').value = total.toFixed(2); // Auto-fill pay amount
         document.getElementById('pay-amt').oninput = ()=>{
           let pay = Number(document.getElementById('pay-amt').value)||0, change=0;
           if(document.getElementById('pay-method').value==="Cash") {
             change = (pay-total)>0 ? (pay-total) : 0;
             document.getElementById('modal-change-row').innerHTML = `<span>Change Due:</span> ₹${change.toFixed(2)}`;
+          } else {
+             document.getElementById('modal-change-row').innerHTML = ''; // Hide change for non-cash
           }
         };
         document.getElementById('pay-method').value = CART.paymentMethod||"Cash";
@@ -1097,148 +1124,172 @@
       document.getElementById('modal-bg').classList.toggle('active',!!show);
     }
     window.onclick = function(e){ if(e.target.id==='modal-bg')updModal("",false);}
+    
     // ==== [INVOICE GENERATION] ====
     function createInvoice() {
-  // 1. Bill details customer se lo
-  let cust = document.getElementById('pay-custname').value,
-      phone = document.getElementById('pay-custphone').value;
-  let subtotal = CART.reduce((s,ci)=>s+ci.price*ci.qty,0);
-  let discount = parseFloat(document.getElementById('cart-discount').value)||0;
-  let dtype = document.getElementById('discount-type').value;
-  let total = dtype==="percent"? subtotal*(1-discount/100) : Math.max(subtotal-discount,0);
-  let method = document.getElementById('pay-method').value;
-  let payAmt = Number(document.getElementById('pay-amt').value)||0;
-  let changeDue = (method==="Cash")?(payAmt-total):0;
+      // 1. Bill details customer se lo
+      let cust = document.getElementById('pay-custname').value,
+          phone = document.getElementById('pay-custphone').value;
+      let subtotal = CART.reduce((s,ci)=>s+ci.price*ci.qty,0);
+      let discount = parseFloat(document.getElementById('cart-discount').value)||0;
+      let dtype = document.getElementById('discount-type').value;
+      let total = dtype==="percent"? subtotal*(1-discount/100) : Math.max(subtotal-discount,0);
+      let method = document.getElementById('pay-method').value;
+      let payAmt = Number(document.getElementById('pay-amt').value)||0;
+      let changeDue = (method==="Cash")?(payAmt-total):0;
 
-  // 2. Invoice Object banao
-  let iid = "INV"+Date.now();
-  INVOICE = {
-    id: iid,
-    time: Date.now(),
-    // Items data mein size bhi shamil kiya
-    items: CART.map(c => ({ name: c.name, qty: c.qty, price: c.price, subtotal: c.qty * c.price, sku: c.sku, size: c.size || '' })),
-    subtotal,
-    discountType: dtype,
-    discount,
-    total: total,
-    method,
-    customer: cust,
-    phone,
-    payAmt,
-    changeDue,
-    adminName,
-  };
+      // 2. Invoice Object banao
+      let iid = "INV"+Date.now();
+      INVOICE = {
+        id: iid,
+        time: Date.now(),
+        // Items data mein size bhi shamil kiya
+        items: CART.map(c => ({ name: c.name, qty: c.qty, price: c.price, subtotal: c.qty * c.price, sku: c.sku, size: c.size || '' })),
+        subtotal,
+        discountType: dtype,
+        discount,
+        total: total,
+        method,
+        customer: cust,
+        phone,
+        payAmt,
+        changeDue,
+        adminName,
+      };
 
-  // 3. Invoice UI mein dikhana
-  renderInvoice(INVOICE);
-  showInvoice();
-  updModal("", false);
+      // 3. Invoice UI mein dikhana
+      renderInvoice(INVOICE);
+      showInvoice();
+      updModal("", false);
 
-  // === 4. MAIN ADDITIONS (SAVE, STOCK UPDATE, TOAST, HOLD) ===
+      // === 4. MAIN ADDITIONS (SAVE, STOCK UPDATE, TOAST) ===
 
-  // 4a. Save invoice history mein (admin ke liye)
-  db.collection('invoices').doc(INVOICE.id).set(INVOICE).then(() => {
-    showToast("Invoice saved to history!", "success");
-    
-    // --- 4b. Inventory (items) stock update karna ---
-    INVOICE.items.forEach(ci => {
-      db.collection('products').where('name', '==', ci.name).get().then(qs => {
-        qs.forEach(doc => {
-          let newQty = (doc.data().quantity || 0) - ci.qty;
-          db.collection('products').doc(doc.id).update({ quantity: Math.max(newQty, 0) });
+      // 4a. Save invoice history mein (admin ke liye)
+      db.collection('invoices').doc(INVOICE.id).set(INVOICE).then(() => {
+        showToast("Invoice saved to history!", "success");
+        
+        // --- 4b. Inventory (items) stock update karna ---
+        INVOICE.items.forEach(ci => {
+          // Assuming 'name' is unique enough to find the product
+          db.collection('products').where('name', '==', ci.name).get().then(qs => {
+            qs.forEach(doc => {
+              // Assuming quantity is the primary stock field for reduction
+              let currentQty = doc.data().quantity || doc.data().stock || 0;
+              let newQty = currentQty - ci.qty;
+              // Check which field to update (prefer 'quantity' as in previous logic)
+              db.collection('products').doc(doc.id).update({ quantity: Math.max(newQty, 0) });
+            });
+          });
         });
-      });
-    });
-  }).catch(err => {
-    showToast("Invoice save failed! Try again.", "error");
-  });
-
-  // 4c. Bill Saved Bills tab ke liye bhi save karo - *Note: This is redundant if you save/hold immediately after*
-  // db.collection('holdbills').doc(INVOICE.id).set(INVOICE).then(() => {
-  //   showToast("Bill temporarily saved for holding/reprint.");
-  // }).catch(err => {
-  //   showToast("Saved bills failed! Try again.", "error");
-  // });
-
-  // 4d. UI: Optionally cart clear kar do
-  CART = [];
-  renderCart();
-}
-
-function showSavedBills() {
-  document.getElementById('billing-area').style.display = 'none';
-  document.getElementById('admin-area').style.display = 'none';
-  document.getElementById('invoice-area').style.display = 'none';
-  document.getElementById('savedbills-area').style.display = 'block';
-  db.collection('holdbills').orderBy('time', 'desc').get().then(res=>{
-    let tbl = document.getElementById('saved-bill-table');
-    tbl.innerHTML = "<tr><th>Bill No</th><th>Customer</th><th>Total</th><th>Date</th><th>Action</th></tr>";
-    res.forEach(doc=>{
-      let d = doc.data();
-      tbl.innerHTML += `<tr>
-        <td>${d.id}</td>
-        <td>${d.customer||"-"}</td>
-        <td>₹${d.total.toFixed(2)}</td>
-        <td>${new Date(d.time).toLocaleString()}</td>
-        <td>
-          <button class="add-btn" onclick="printSavedBill('${d.id}')">Print</button>
-          <button class="add-btn" onclick="downloadSavedBill('${d.id}')">Download</button>
-          <button class="delete-btn" onclick="deleteSavedBill('${d.id}')">Delete</button>
-        </td>
-      </tr>`;
-    });
-  });
-}
-
-async function printSavedBill(billid) {
-  let doc = await db.collection('holdbills').doc(billid).get();
-  if(doc.exists) {
-    INVOICE = doc.data();
-    renderInvoice(INVOICE);
-    showInvoice();
-    // After render, print
-    setTimeout(()=>{
-      window.print();
-      // Delete after successful printing confirmation (user should see the print dialog)
-      db.collection('holdbills').doc(billid).delete().then(()=>{
-         // FIX 3: Success message after printing
-         showToast("Bill successfully printed and removed from Saved Bills.", "success"); 
-         showSavedBills();
-      });
-    }, 500); // Small delay for rendering
-  } else {
-     showToast("Bill not found in saved list.", "error");
-  }
-}
-function downloadSavedBill(billid) {
-  // Download logic
-  db.collection('holdbills').doc(billid).get().then(doc=>{
-    if(doc.exists) {
-      INVOICE = doc.data();
-      renderInvoice(INVOICE); // Need to render to get the invoice-box content
-      let area = document.getElementById('invoice-box');
-      // html2pdf download
-      html2pdf().from(area).save(INVOICE.id+".pdf").then(()=>{
-        db.collection('holdbills').doc(billid).delete().then(()=>{
-          // FIX 3: Success message after download
-          showToast("Bill successfully downloaded and removed from Saved Bills.", "success");
-          showSavedBills();
+        
+        // 4c. Bill Saved Bills tab ke liye bhi save karo (for immediate access to print/download/share)
+        db.collection('holdbills').doc(INVOICE.id).set(INVOICE).then(() => {
+          showToast("Bill temporarily saved for sharing/reprint. Go to Saved Bills.", "info");
         });
+        
+      }).catch(err => {
+        showToast("Invoice save failed! Try again. Error: " + err.message, "error");
       });
-    } else {
-       showToast("Bill not found in saved list.", "error");
+
+      // 4d. UI: Cart clear kar do
+      CART = [];
+      renderCart();
     }
-  });
-}
-function deleteSavedBill(billid) {
-  if(confirm("Delete this saved bill?")) {
-    db.collection('holdbills').doc(billid).delete().then(()=>{
-      showToast("Saved bill deleted.", "success");
-      showSavedBills();
-    }).catch(() => showToast("Failed to delete bill.", "error"));
-  }
-}
 
+    function showSavedBills() {
+      document.getElementById('billing-area').style.display = 'none';
+      document.getElementById('admin-area').style.display = 'none';
+      document.getElementById('invoice-area').style.display = 'none';
+      document.getElementById('savedbills-area').style.display = 'block';
+      db.collection('holdbills').orderBy('time', 'desc').get().then(res=>{
+        let tbl = document.getElementById('saved-bill-table');
+        tbl.innerHTML = "<tr><th>Bill No</th><th>Customer</th><th>Total</th><th>Date</th><th>Action</th></tr>";
+        res.forEach(doc=>{
+          let d = doc.data();
+          tbl.innerHTML += `<tr>
+            <td>${d.id}</td>
+            <td>${d.customer||"-"}</td>
+            <td>₹${d.total.toFixed(2)}</td>
+            <td>${new Date(d.time).toLocaleString()}</td>
+            <td>
+              <button class="add-btn" onclick="viewSavedBillForActions('${d.id}')">View/Actions</button>
+              <button class="delete-btn" onclick="deleteSavedBill('${d.id}')">Delete</button>
+            </td>
+          </tr>`;
+        });
+      });
+    }
+
+    async function viewSavedBillForActions(billid) {
+        let doc = await db.collection('holdbills').doc(billid).get();
+        if(doc.exists) {
+            INVOICE = doc.data();
+            renderInvoice(INVOICE);
+            showInvoice(); // Show the invoice view with actions
+            // Update buttons to also show "Back to Saved Bills"
+            document.getElementById('invoice-actions').innerHTML = `
+                <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
+                <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
+                <button onclick="shareInvoice()" id="share-invoice-btn-saved"><i class="fa-solid fa-share-nodes"></i> Share</button>
+                <button onclick="showSavedBills()">Back to Saved Bills</button>
+            `;
+            // Hide share if not supported
+            if (!navigator.share) {
+                const shareBtn = document.getElementById('share-invoice-btn-saved');
+                if (shareBtn) shareBtn.style.display = 'none';
+            }
+        } else {
+            showToast("Bill not found in saved list.", "error");
+        }
+    }
+
+    async function printSavedBill(billid) {
+      let doc = await db.collection('holdbills').doc(billid).get();
+      if(doc.exists) {
+        INVOICE = doc.data();
+        renderInvoice(INVOICE);
+        showInvoice();
+        // After render, print
+        setTimeout(()=>{
+          window.print();
+          // Delete after successful printing confirmation (user should see the print dialog)
+          db.collection('holdbills').doc(billid).delete().then(()=>{
+             // FIX 3: Success message after printing
+             showToast("Bill successfully printed and removed from Saved Bills.", "success"); 
+             showSavedBills();
+          });
+        }, 500); // Small delay for rendering
+      } else {
+         showToast("Bill not found in saved list.", "error");
+      }
+    }
+    
+    function downloadSavedBill(billid) {
+      // Download logic
+      db.collection('holdbills').doc(billid).get().then(doc=>{
+        if(doc.exists) {
+          INVOICE = doc.data();
+          // Use viewSavedBillForActions to render and then download
+          viewSavedBillForActions(billid).then(() => {
+              // Delay to ensure rendering is complete before calling downloadInvoice
+              setTimeout(() => {
+                  downloadInvoice(true); // true means delete after download
+              }, 100);
+          });
+        } else {
+           showToast("Bill not found in saved list.", "error");
+        }
+      });
+    }
+    
+    function deleteSavedBill(billid) {
+      if(confirm("Delete this saved bill?")) {
+        db.collection('holdbills').doc(billid).delete().then(()=>{
+          showToast("Saved bill deleted.", "success");
+          showSavedBills();
+        }).catch(() => showToast("Failed to delete bill.", "error"));
+      }
+    }
 
 
     function showInvoice() {
@@ -1247,6 +1298,9 @@ function deleteSavedBill(billid) {
       document.getElementById('savedbills-area').style.display = 'none';
       document.getElementById('invoice-area').style.display = 'flex';
       document.getElementById('invoice-actions').style.display = 'flex';
+      // Ensure Share button visibility check runs on showing invoice
+      const shareBtn = document.getElementById('share-invoice-btn');
+      if (shareBtn) shareBtn.style.display = navigator.share ? 'block' : 'none';
     }
     
     // === UPDATED: SHOP MOBILE AND NO LOGO ===
@@ -1274,7 +1328,7 @@ function deleteSavedBill(billid) {
               </td>
               <td>${it.qty}</td>
               <td>₹${it.price}</td>
-              <td>₹${it.subtotal}</td>
+              <td>₹${it.subtotal.toFixed(2)}</td>
             </tr>`).join("")}
           </tbody>
         </table>
@@ -1290,12 +1344,19 @@ function deleteSavedBill(billid) {
         </div>
         <div class="invoice-qr" id="invoice-qr"></div>
       `;
-    document.getElementById('invoice-actions').innerHTML = `
-      <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
-      <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Download</button>
-      <button onclick="saveHoldInvoice()"><i class="fa fa-save"></i> Save/Hold</button>
-      <button onclick="showBillingTab()">Back</button>
-    `;
+      // Default actions (will be overwritten if coming from Saved Bills)
+      document.getElementById('invoice-actions').innerHTML = `
+          <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
+          <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
+          <button onclick="shareInvoice()" id="share-invoice-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
+          <button onclick="saveHoldInvoice()"><i class="fa fa-save"></i> Save/Hold</button>
+          <button onclick="showBillingTab()">Back</button>
+      `;
+      // Hide share if not supported
+      if (!navigator.share) {
+          const shareBtn = document.getElementById('share-invoice-btn');
+          if (shareBtn) shareBtn.style.display = 'none';
+      }
 
       let qrPayload = JSON.stringify({ id: inv.id, total: inv.total, date: inv.time });
       setTimeout(()=>new QRCode(document.getElementById("invoice-qr"),{ text:qrPayload, width:72,height:72 }),100);
@@ -1306,24 +1367,76 @@ function deleteSavedBill(billid) {
     function printInvoice() {
       window.print();
     }
-    function downloadInvoice() {
+    
+    // FIX 2: Download Invoice Functionality
+    function downloadInvoice(deleteAfter = false) {
+      if (!INVOICE) {
+          showToast("No active invoice to download.", "error");
+          return;
+      }
       let area = document.getElementById('invoice-box');
       html2pdf().from(area).save(INVOICE.id+".pdf").then(()=>{
-          // FIX 3: Success message after download
-          showToast("Bill successfully downloaded.", "success");
+          showToast("Bill successfully saved to device!", "success");
+          if (deleteAfter) {
+              db.collection('holdbills').doc(INVOICE.id).delete().then(()=>{
+                  showToast("Saved bill removed after successful download.", "success");
+                  showSavedBills();
+              });
+          }
+      }).catch(err => {
+          showToast("Download failed: " + err.message, "error");
       });
     }
+    
+    // FIX 3: Share Invoice Functionality (using Web Share API)
+    async function shareInvoice() {
+        if (!navigator.share) {
+            showToast("Sharing not supported on this device/browser.", "error");
+            return;
+        }
+
+        if (!INVOICE) {
+            showToast("No active invoice to share.", "error");
+            return;
+        }
+
+        try {
+            // 1. Generate the PDF content as a Blob
+            const element = document.getElementById('invoice-box');
+            const pdfBlob = await html2pdf().from(element).outputPdf('blob');
+            
+            // 2. Create a File object from the Blob
+            const file = new File([pdfBlob], INVOICE.id + ".pdf", { type: 'application/pdf' });
+            
+            // 3. Share the file
+            await navigator.share({
+                title: 'Neaupane Puja Pasal - Invoice ' + INVOICE.id,
+                text: `Dear ${INVOICE.customer}, Your total amount is ₹${INVOICE.total.toFixed(2)}. Thank you for your purchase from Neaupane Puja Pasal.`,
+                files: [file],
+            });
+            
+            showToast("Invoice shared successfully!", "success");
+            
+        } catch (error) {
+            // User cancelled the share or an error occurred
+            if (error.name !== 'AbortError') {
+                showToast("Sharing failed: " + error.message, "error");
+            }
+        }
+    }
+
+
     function saveHoldInvoice() {
       // Re-save/Update the current invoice on holdbills collection
       db.collection('holdbills').doc(INVOICE.id).set(INVOICE).then(() => {
           // FIX 4: Success message after saving
-          showToast("Bill saved/held successfully! Find it in Saved Bills.", "success");
+          showToast("Bill successfully saved/held in 'Saved Bills'!", "success");
           // Clear current cart and switch to billing view
           CART = [];
           renderCart();
           setTimeout(showBillingTab, 1000);
       }).catch(err => {
-          showToast("Failed to save bill on hold.", "error");
+          showToast("Failed to save bill on hold. Try again.", "error");
       });
     }
 
@@ -1599,10 +1712,11 @@ function deleteSavedBill(billid) {
       let year=n.getFullYear(), mon=n.getMonth(), day=n.getDate();
       let sumDay=0,sumMon=0,sumYr=0, cntD=0, cntM=0, cntY=0;
       invs.forEach(inv=>{
-        let dt = new Date(inv.data().time);
-        if(dt.getFullYear() == year) { sumYr += inv.data().total; cntY++; }
-        if(dt.getFullYear()==year&&dt.getMonth()==mon) { sumMon += inv.data().total; cntM++;}
-        if(dt.getFullYear()==year&&dt.getMonth()==mon&&dt.getDate()==day) { sumDay += inv.data().total; cntD++; }
+        let d = inv.data();
+        let dt = new Date(d.time);
+        if(dt.getFullYear() == year) { sumYr += d.total; cntY++; }
+        if(dt.getFullYear()==year&&dt.getMonth()==mon) { sumMon += d.total; cntM++;}
+        if(dt.getFullYear()==year&&dt.getMonth()==mon&&dt.getDate()==day) { sumDay += d.total; cntD++; }
       });
       document.getElementById('sale-day').innerHTML = `₹${sumDay.toFixed(2)} <br/><span style="font-size:0.84em;font-weight:400">(${cntD} bills)</span>`;
       document.getElementById('sale-month').innerHTML = `₹${sumMon.toFixed(2)} <br/><span style="font-size:0.84em;font-weight:400">(${cntM} bills)</span>`;
@@ -1662,6 +1776,18 @@ function deleteSavedBill(billid) {
         document.getElementById('invoice-area').style.display='flex';
         document.getElementById('admin-area').style.display='none';
         document.getElementById('billing-area').style.display='none';
+        
+        // Update actions to only show View/Print/Download (no hold/back to billing)
+        document.getElementById('invoice-actions').innerHTML = `
+            <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
+            <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
+            <button onclick="shareInvoice()" id="share-invoice-btn-hist"><i class="fa-solid fa-share-nodes"></i> Share</button>
+            <button onclick="renderAdminHistory()">Back to History</button>
+        `;
+        if (!navigator.share) {
+            const shareBtn = document.getElementById('share-invoice-btn-hist');
+            if (shareBtn) shareBtn.style.display = 'none';
+        }
       }
     }
     function deleteInvoice(invId) {
@@ -1850,8 +1976,6 @@ function deleteItem(itemId) {
     })
     .catch(() => showToast("Error deleting item!", "error"));
 }
-
-
 
 
   </script>
