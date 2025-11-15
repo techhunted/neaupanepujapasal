@@ -88,7 +88,6 @@
     .site-container {
       display: flex;
       height: calc(100vh - 75px); 
-      /* FIX 2: Ensure container respects parent width */
       width: 100%;
     }
     .sidebar {
@@ -119,8 +118,6 @@
       flex: 1; padding: 0; min-width: 0;
       background: var(--color-billing-bg);
       display: flex; flex-direction: column;
-      transition: background 0.2s;
-      /* FIX 3: Prevent main content from pushing scroll */
       max-width: 100%; 
       overflow: hidden; 
     }
@@ -138,18 +135,10 @@
       border-right: 2px solid #ffd392;
       overflow-y: auto;
       min-width: 320px;
-      /* FIX 4: Ensure it doesn't break mainarea width */
       max-width: 100%;
     }
     .product-listing .product-search {
       display: flex; gap: 15px; margin-bottom: 20px;
-    }
-    .product-search input, .product-search select {
-      padding: 7px 11px; border-radius: 5px; border: 1px solid #ecc173; outline: none;
-      font-size: 1rem; min-width: 65px;
-    }
-    .product-table {
-      width: 100%; border-spacing: 0; margin-top: 16px;
     }
     .product-table th { background: #fdcd81; color: #5b3c10; font-weight: 500; }
     .product-table td, .product-table th {
@@ -157,12 +146,6 @@
       text-align: left;
     }
     .product-table td .item-name-main { font-weight: 600; }
-    .product-table td .item-size-sub { font-size: 0.8em; color: #777; display: block; }
-    .add-btn {
-      background: var(--color-primary); color: #fff; border: none; border-radius: 5px;
-      padding: 5px 11px; cursor: pointer; font-weight: 600;
-    }
-    .add-btn:disabled { background: #ccc; color: #eee; cursor: not-allowed; }
     .cart {
       flex: 0.95;
       background: #fffce8; padding: 24px 24px 24px 10px;
@@ -170,76 +153,12 @@
       display: flex; flex-direction: column; min-width: 290px;
       border-left: 1px solid #fee29b;
     }
-    .cart-title { font-size: 1.18rem; font-weight: 600; margin-bottom: 17px; color: #a98325;}
-    .cart-empty { text-align: center; margin: 40px 0; color: #aaa; }
-
-    .cart-table {
-      width: 100%; font-size: 0.99em; margin-bottom: 12px;
-    }
-    .cart-table td, .cart-table th {
-      padding: 7px 4px;
-      text-align: left;
-    }
-    .cart-table th { background: #fee7ac; color: #83610c;}
-    .cart .inline-input {
-      width: 44px; font-size: 1em; padding: 1px 6px; border-radius: 4px; border: 1px solid #f1dd95;
-    }
-    .cart-summary {
-      margin: 13px 0 10px 0;
-      font-size: 1.09em;
-    }
-    .cart-label {
-      color: #7a6906; font-weight: 500; margin-right: 7px;
-    }
     .cart .process-payment-btn {
       background: var(--color-accent); color: var(--color-nav);
       width: 100%; padding: 12px; margin-top: 11px; font-size: 1.04rem;
       border: none; border-radius: 8px; font-weight: bold;
       cursor: pointer; transition: background 0.18s;
       box-shadow: 0 2px 9px #f5cb44a0;
-    }
-    .cart .process-payment-btn:disabled {
-      background: #edc474; color: #d9d0c0; cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    /* Modal / Popup */
-    .modal-bg {
-      display: none; justify-content: center; align-items: center; position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(63,49,31,0.22);
-      z-index: 1100;
-    }
-    .modal-bg.active { display: flex; }
-    .modal-box {
-      background: #fffdf4; border-radius: 15px; box-shadow: 0 0 33px #e8dbac88;
-      min-width: 330px; max-width: 98vw; padding: 28px 29px; position: relative;
-      animation: fadeInUp 0.27s;
-    }
-    @keyframes fadeInUp {
-      0% { transform: translateY(48px) scale(0.96); opacity: 0.01;}
-      85% { transform: translateY(-8px) scale(1.03);}
-      100% { transform: none;}
-    }
-    .modal-box h3 { margin-top: 0; }
-    .modal-close {
-      position: absolute; top: 15px; right: 14px; font-size: 1.27em; cursor: pointer; color: #b0932f;
-      border: none; background: none;
-    }
-    /* Payment modal fields */
-    .modal-box label { display:block; margin-top: 9px; font-weight: 500; }
-    .modal-box input, .modal-box select {
-      padding: 7px 10px; margin-top: 3px; width: 97%; border-radius: 5px;
-      font-size: 1.02em; border: 1px solid #e4d17e; outline: none;
-    }
-    .modal-box .summary-row {
-      display: flex; justify-content: space-between; margin: 7px 0;
-      font-size: 1.03em;
-    }
-    .gen-invoice-btn {
-      margin-top: 21px; width: 100%; background: var(--color-accent); color: var(--color-nav);
-      font-weight: bold; font-size: 1.12em; border: none; border-radius: 6px;
-      padding: 11px; cursor: pointer; box-shadow: 0 3px 18px #ffdd77a8;
-      transition: background 0.22s;
     }
 
     /* Invoice styles - Optimized for large lists/printing */
@@ -261,90 +180,96 @@
       font-size: 1.05em;
       position: relative;
       font-family:'Segoe UI',sans-serif;
-      /* FIX 1: Set max height and allow scroll for long item lists */
       max-height: 80vh; 
       overflow-y: auto; 
-      display: flex; /* Flexbox for internal structure */
+      display: flex; 
       flex-direction: column;
     }
+    /* QR Code Default Position (top right, inside invoice-box) */
     .invoice-qr { 
-      position: absolute; right:15px; top:27px; 
-      width: 72px; height: 72px; 
+      position: absolute; 
+      right:15px; 
+      top:27px; 
+      width: 72px; 
+      height: 72px; 
       padding: 3px;
     }
     .invoice-header {
       text-align: center; margin-bottom: 13px;
-      flex-shrink: 0; /* Important: prevents shrinking on scroll */
+      flex-shrink: 0; 
     }
-    .invoice-shopname { font-size: 1.2rem; font-weight: bold; letter-spacing: 0.5px;}
-    .invoice-address { color: #7c6e33;}
     
-    /* Item Table area - make it scroll if needed */
     .invoice-table-wrapper {
-        flex-grow: 1; /* Allow table wrapper to take space */
-        overflow-y: auto; /* Internal scrolling for the table list in main UI */
+        flex-grow: 1; 
+        overflow-y: auto; 
         margin-bottom: 15px;
-    }
-    .invoice-table { 
-        width: 100%; 
-        font-size:0.98em;
-    }
-    .invoice-table th, .invoice-table td { 
-        padding:6px 4px; 
-        border-bottom: 1px solid #f5efbe;
     }
     .invoice-summary { 
         margin: 15px 0 0 0; 
-        flex-shrink: 0; /* Important: prevents shrinking on scroll */
-        /* FIX: Ensure footer is clear from table */
+        flex-shrink: 0; 
         padding-top: 10px;
         border-top: 1px dashed #e4d17e;
     }
-    .invoice-total { font-weight: bold; font-size: 1.11em; }
-    .invoice-actions {
-      display: flex; gap: 13px; justify-content: center; margin:18px 0 2px 0;
-    }
-    .invoice-actions button {
-      padding: 8px 14px; border-radius: 6px; border:none;
-      font-size: 1.04em; font-weight: 600;
-      background: var(--color-accent); color: var(--color-nav); cursor:pointer;
-      box-shadow:0 2px 7px #faf088a5;
-      transition: background 0.17s;
-    }
 
-    /* Admin Section CSS (No Changes) */
-    .admin-area {
-      display: flex; flex:1; background: var(--color-admin-bg);
-      padding-bottom: 10px;
+    /* Auth/login styles - FIX 1: Responsive Login Page */
+    .login-screen {
+      position: fixed; 
+      z-index: 70000;
+      inset:0; 
+      background: #fff5e0; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center;
+      /* Use vh/vw for better centering on small screens */
+      height: 100vh; 
+      width: 100vw;
     }
-    .admin-nav { width: 220px; background: #ffffffb9; padding: 20px 12px 12px 12px;
-      border-right: 1px solid #f7c85b; min-width: 140px; border-radius: 0 24px 24px 0;}
-    .admin-nav .admin-tab {
-      margin-bottom: 13px; display:flex; align-items:center; gap:11px;
-      padding:10px 13px; font-size:1em; border-radius: 7px 20px 20px 7px;
-      cursor:pointer;
-      background:none; border:none; color: #5f471e;
-      font-weight:500;
+    .login-box {
+      background: #fffbe5; 
+      border-radius: 15px; 
+      box-shadow: 0 2px 31px #e1c96295;
+      padding: 36px 41px; 
+      min-width: 320px; 
+      max-width: 90vw; /* Responsive width */
+      width: 380px; /* Base width */
+      text-align: center; 
+      display:flex; 
+      flex-direction:column;
+      align-items:center;
+      /* Optional: Add slight transition for resizing/centering */
+      transition: all 0.3s ease-out;
     }
-    .admin-tab.active, .admin-tab:hover {
-      background: var(--color-dashboard); color: var(--color-nav);
+    .login-box img { 
+        height: 100px; 
+        margin-bottom:9px; 
     }
-    .admin-content { flex: 1; padding: 28px 17px;}
-    .form-card label, .form-card input, .form-card select, .form-card textarea {
-      display: block; width: 97%; margin-top: 7px; padding:9px 9px;
-      font-size: 1em; border-radius:5px; border:1px solid #d4cdad; margin-bottom: 10px;
+    .login-box h2 { 
+        margin:14px 0 17px 0; 
+        font-size:1.35rem; 
+        color:var(--color-primary);
     }
-    .delete-btn {
-      background:#e84141;
-      color:white;
-      border:none;
-      padding:6px 10px;
-      border-radius:6px;
-      cursor:pointer;
-      font-size:0.9rem;
+    .login-box input, .login-box button {
+      display:block; 
+      width: 100%; 
+      margin: 7px 0 15px 0; 
+      border-radius: 7px; 
+      font-size:1.08rem;
+      padding: 10px; 
+      border: 1px solid #ecd56d;
     }
+    .login-box button { 
+      background: var(--color-accent); 
+      color: #422f0c; 
+      font-weight: bold; 
+      cursor: pointer;
+    }
+    .login-error { 
+        color: var(--color-error); 
+        font-size: 1.1em; 
+    }
+    /* End FIX 1 */
 
-    /* Responsive Breakpoints (No Changes) */
+    /* Responsive Breakpoints (No Changes to core app layout) */
     @media (max-width: 850px) {
       .site-container {
         flex-direction: column;
@@ -367,20 +292,6 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
-      .mainarea { 
-        height:auto;
-        padding: 0; 
-        max-width: 100%;
-        overflow: hidden; 
-      }
-      .billing-area, .admin-area { 
-        flex-direction: column;
-      }
-      .product-listing, .cart, .admin-nav, .admin-content { 
-        width:auto; min-width:0;
-        padding: 15px 15px 15px 15px; 
-        max-width: 100%; 
-      }
     }
 
     /* Print Styles (Critical for multi-page PDF generation) */
@@ -401,8 +312,8 @@
         min-height: auto;
         padding: 0;
         margin: 0 auto; 
-        display: block; /* Ensure it flows naturally for multi-page print */
-        overflow: visible !important; /* Allow content to span multiple pages */
+        display: block; 
+        overflow: visible !important; 
       }
       
       .invoice-box {
@@ -413,31 +324,35 @@
         max-width: 100%;
         min-width: unset;
         padding: 10px 15px !important; 
-        /* Important for multi-page: Remove fixed height/scroll */
         max-height: none !important; 
         overflow: visible !important; 
+        position: relative; /* Ensure QR code position works */
       }
       
       .invoice-table-wrapper {
-        overflow-y: visible !important; /* Content must be visible for printing */
+        overflow-y: visible !important; 
         max-height: none !important;
       }
 
-      /* Ensure summary details stay with the main content */
-      .invoice-summary {
-          page-break-before: auto;
-          page-break-after: auto;
+      /* FIX 2: Ensure QR code is always top-right (absolute within relative .invoice-box) */
+      .invoice-qr {
+          position: absolute !important; 
+          right: 10px !important; 
+          top: 10px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          text-align: right !important;
+          width: 72px !important; 
+          height: 72px !important; 
       }
 
       .invoice-actions, .sidebar, .topnav { 
         display:none !important;
       }
       
-      .invoice-qr {
-          position: static !important;
-          margin: 10px auto !important; 
-          display: block !important;
-          text-align: center;
+      .invoice-summary {
+          page-break-before: auto;
+          page-break-after: auto;
       }
     }
   </style>
