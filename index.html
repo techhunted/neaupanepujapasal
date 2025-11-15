@@ -21,10 +21,14 @@
       --logo-size: 50px;
     }
     
-    /* === FIX 1: Prevent horizontal scroll on body and HTML === */
+    /* Global Reset & Responsive Base */
     html, body {
         width: 100%;
         overflow-x: hidden; 
+        box-sizing: border-box;
+    }
+    *, *::before, *::after {
+        box-sizing: inherit;
     }
 
     body {
@@ -90,6 +94,7 @@
       height: calc(100vh - 75px); 
       width: 100%;
     }
+    /* Sidebar - Desktop Layout */
     .sidebar {
       width: 200px;
       background: var(--color-sidebar);
@@ -185,7 +190,7 @@
       display: flex; 
       flex-direction: column;
     }
-    /* QR Code Default Position (top right, inside invoice-box) */
+    /* FIX 2: QR Code Default Position (top right, inside invoice-box) */
     .invoice-qr { 
       position: absolute; 
       right:15px; 
@@ -210,8 +215,11 @@
         padding-top: 10px;
         border-top: 1px dashed #e4d17e;
     }
+    .invoice-actions {
+      display: flex; gap: 13px; justify-content: center; margin:18px 0 2px 0;
+    }
 
-    /* Auth/login styles - FIX 1: Responsive Login Page */
+    /* Auth/login styles - FIX 1: Fully Responsive Login Page */
     .login-screen {
       position: fixed; 
       z-index: 70000;
@@ -220,7 +228,6 @@
       display:flex; 
       align-items:center; 
       justify-content:center;
-      /* Use vh/vw for better centering on small screens */
       height: 100vh; 
       width: 100vw;
     }
@@ -229,23 +236,22 @@
       border-radius: 15px; 
       box-shadow: 0 2px 31px #e1c96295;
       padding: 36px 41px; 
-      min-width: 320px; 
-      max-width: 90vw; /* Responsive width */
-      width: 380px; /* Base width */
+      min-width: 300px; /* Minimized min-width for small phones */
+      max-width: 90vw; 
+      width: 380px; 
       text-align: center; 
       display:flex; 
       flex-direction:column;
       align-items:center;
-      /* Optional: Add slight transition for resizing/centering */
       transition: all 0.3s ease-out;
     }
     .login-box img { 
-        height: 100px; 
-        margin-bottom:9px; 
+        height: 80px; /* Slightly smaller logo on mobile */
+        margin-bottom:15px; 
     }
     .login-box h2 { 
-        margin:14px 0 17px 0; 
-        font-size:1.35rem; 
+        margin:10px 0 15px 0; 
+        font-size:1.25rem; 
         color:var(--color-primary);
     }
     .login-box input, .login-box button {
@@ -253,8 +259,8 @@
       width: 100%; 
       margin: 7px 0 15px 0; 
       border-radius: 7px; 
-      font-size:1.08rem;
-      padding: 10px; 
+      font-size:1rem; /* Responsive font size */
+      padding: 12px; /* Increased padding for better touch targets */
       border: 1px solid #ecd56d;
     }
     .login-box button { 
@@ -263,13 +269,8 @@
       font-weight: bold; 
       cursor: pointer;
     }
-    .login-error { 
-        color: var(--color-error); 
-        font-size: 1.1em; 
-    }
-    /* End FIX 1 */
 
-    /* Responsive Breakpoints (No Changes to core app layout) */
+    /* Main Responsive Breakpoints */
     @media (max-width: 850px) {
       .site-container {
         flex-direction: column;
@@ -292,6 +293,39 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
+      .mainarea { 
+        height:auto;
+        padding: 0; 
+        max-width: 100%;
+        overflow: hidden; 
+      }
+      .billing-area, .admin-area { 
+        flex-direction: column;
+      }
+      .product-listing, .cart, .admin-nav, .admin-content { 
+        width:auto; min-width:0;
+        padding: 15px 15px 15px 15px; 
+        max-width: 100%; 
+      }
+    }
+    
+    @media (max-width: 450px) {
+        .login-box {
+            padding: 25px 20px;
+            width: 95vw;
+        }
+        .login-box img { 
+            height: 70px; 
+        }
+        .topnav {
+            padding: 6px 10px;
+        }
+        body {
+            padding-top: 70px;
+        }
+        .site-container {
+            height: calc(100vh - 70px);
+        }
     }
 
     /* Print Styles (Critical for multi-page PDF generation) */
@@ -309,8 +343,6 @@
         top: 0; 
         max-width: 450px; 
         width: 100%; 
-        min-height: auto;
-        padding: 0;
         margin: 0 auto; 
         display: block; 
         overflow: visible !important; 
@@ -326,7 +358,7 @@
         padding: 10px 15px !important; 
         max-height: none !important; 
         overflow: visible !important; 
-        position: relative; /* Ensure QR code position works */
+        position: relative; 
       }
       
       .invoice-table-wrapper {
@@ -453,6 +485,7 @@
         <div class="invoice-box" id="invoice-box">
           </div>
         <div class="invoice-actions" id="invoice-actions">
+          <!-- Updated Action Buttons -->
           <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
           <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
           <button onclick="shareInvoice()" id="share-invoice-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
@@ -494,6 +527,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Font Awesome 6.4.2 includes solid icons like fa-share-nodes -->
   <script>
     // ==== Replace with your real Firebase config ====
     const firebaseConfig = {
@@ -1118,7 +1152,7 @@
       window.print();
     }
     
-    // FIX 1: Download/Save Invoice Functionality with scale adjustment for multi-page PDF
+    // Download/Save Invoice Functionality with scale adjustment for multi-page PDF
     function downloadInvoice(deleteAfter = false) {
       if (!INVOICE) {
           showToast("No active invoice to download.", "error");
@@ -1130,7 +1164,6 @@
           margin: 10,
           filename: INVOICE.id + '.pdf',
           image: { type: 'jpeg', quality: 0.98 },
-          // Increased scale and explicit A4 format ensures multi-page printing works well for large lists.
           html2canvas: { scale: 3 }, 
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
@@ -1139,7 +1172,6 @@
           showToast("Bill successfully saved to device!", "success");
           if (deleteAfter) {
               db.collection('holdbills').doc(INVOICE.id).delete().then(()=>{
-                  showToast("Saved bill removed after successful download.", "success");
                   showSavedBills();
               });
           }
@@ -1507,6 +1539,7 @@
             <td>${d.customer||"-"}</td>
             <td>₹${d.total.toFixed(2)}</td>
             <td>
+              <!-- Print button for history -->
               <button class="add-btn" onclick="printInvoiceById('${d.id}')"><i class="fa fa-print"></i> Print</button>
               <button class="delete-btn" onclick="deleteInvoice('${d.id}')"><i class="fa fa-trash"></i></button>
             </td>
@@ -1515,7 +1548,7 @@
       });
     }
     
-    // FIX 2: Function to fetch, render, and print invoice from history
+    // Function to fetch, render, and print invoice from history
     async function printInvoiceById(invId) {
         let doc = await db.collection('invoices').doc(invId).get();
         if(doc.exists) {
