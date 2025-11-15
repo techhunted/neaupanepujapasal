@@ -180,7 +180,7 @@
       /* Responsive Base */
       min-width: 330px; 
       max-width: 98vw; 
-      width: 480px; /* Base width for content */
+      width: 480px; 
       padding: 28px 29px; 
       position: relative;
       animation: fadeInUp 0.27s;
@@ -188,7 +188,7 @@
     /* Desktop Improvement */
     @media (min-width: 800px) {
         .modal-box {
-            max-width: 600px; /* Wider box on desktop for aesthetic */
+            max-width: 600px; 
             width: 550px;
         }
     }
@@ -206,9 +206,9 @@
     /* Payment modal fields */
     .modal-box label { display:block; margin-top: 9px; font-weight: 500; }
     .modal-box input, .modal-box select {
-      padding: 10px 12px; /* Increased padding */
+      padding: 10px 12px; 
       margin-top: 3px; 
-      width: 97%; /* Use 100% inside a controlled max-width box */
+      width: 97%; 
       border-radius: 5px;
       font-size: 1.02em; 
       border: 1px solid #e4d17e; 
@@ -216,7 +216,7 @@
     }
     .modal-box .summary-row {
       display: flex; justify-content: space-between; 
-      margin: 10px 0; /* Increased margin */
+      margin: 10px 0; 
       font-size: 1.05em;
       padding: 4px 0;
     }
@@ -227,20 +227,19 @@
         padding-top: 8px;
     }
     .gen-invoice-btn {
-      margin-top: 25px; /* Increased top margin */
+      margin-top: 25px; 
       width: 100%; 
       background: var(--color-accent); 
       color: var(--color-nav);
       font-weight: bold; 
-      font-size: 1.15em; /* Slightly larger font */
+      font-size: 1.15em; 
       border: none; 
-      border-radius: 8px; /* Rounded corners */
-      padding: 14px; /* Increased padding */
+      border-radius: 8px; 
+      padding: 14px; 
       cursor: pointer; 
-      box-shadow: 0 4px 15px #ffdd77a8; /* Better shadow */
+      box-shadow: 0 4px 15px #ffdd77a8; 
       transition: background 0.22s;
     }
-    /* End Modal Fix */
 
 
     /* Invoice styles */
@@ -419,7 +418,7 @@
     }
     .login-box button { 
       background: var(--color-accent); 
-      color: #422f0c; 
+      color: var(--color-nav); 
       font-weight: bold; 
       cursor: pointer;
     }
@@ -727,8 +726,8 @@
           </div>
         <div class="invoice-actions" id="invoice-actions">
           <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
-          <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
-          <button onclick="shareInvoice()" id="share-invoice-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
+          <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download (DOC)</button>
+          <button onclick="shareInvoice()" id="share-invoice-btn"><i class="fa-solid fa-share-nodes"></i> Share (DOC)</button>
           <button onclick="saveHoldInvoice()"><i class="fa fa-save"></i> Save/Hold</button>
           <button onclick="showBillingTab()">Back</button>
         </div>
@@ -1267,8 +1266,8 @@
             showInvoice(); 
             document.getElementById('invoice-actions').innerHTML = `
                 <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
-                <button onclick="downloadInvoice(true)"><i class="fa fa-download"></i> Save/Download</button>
-                <button onclick="shareInvoice()" id="share-invoice-btn-saved"><i class="fa-solid fa-share-nodes"></i> Share</button>
+                <button onclick="downloadInvoice(true)"><i class="fa fa-download"></i> Save/Download (DOC)</button>
+                <button onclick="shareInvoice()" id="share-invoice-btn-saved"><i class="fa-solid fa-share-nodes"></i> Share (DOC)</button>
                 <button onclick="showSavedBills()">Back to Saved Bills</button>
             `;
             if (!navigator.share) {
@@ -1383,8 +1382,8 @@
       `;
       document.getElementById('invoice-actions').innerHTML = `
           <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
-          <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
-          <button onclick="shareInvoice()" id="share-invoice-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
+          <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download (DOC)</button>
+          <button onclick="shareInvoice()" id="share-invoice-btn"><i class="fa-solid fa-share-nodes"></i> Share (DOC)</button>
           <button onclick="saveHoldInvoice()"><i class="fa fa-save"></i> Save/Hold</button>
           <button onclick="showBillingTab()">Back</button>
       `;
@@ -1400,40 +1399,83 @@
     }
     // === END RENDER INVOICE STRUCTURE ===
 
+    // === CUSTOM DOC GENERATION FUNCTIONS ===
 
-    function printInvoice() {
-      window.print();
+    // Helper to generate doc content (uses innerHTML + MHTML headers)
+    function generateDocContent(invoiceId, isSharing = false) {
+        // Use a clone of the invoice box to clean it for DOC export
+        const originalArea = document.getElementById('invoice-box');
+        const clone = originalArea.cloneNode(true);
+        
+        // Remove QR container for cleaner doc export (optional, depends on Word behavior)
+        const qrContainer = clone.querySelector('#invoice-qr-container');
+        if (qrContainer) qrContainer.remove();
+        
+        // Get the inner HTML
+        const htmlContent = clone.innerHTML;
+
+        // DOC format structure (MHTML headers) to help MS Word open it
+        const docHtml = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head>
+                <meta charset='utf-8'>
+                <title>Invoice ${invoiceId}</title>
+                <style>
+                    /* Basic inline styles for Word compatibility */
+                    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; }
+                    .invoice-box { width: 100%; max-width: 600px; margin: 0 auto; padding: 15px; border: 1px solid #ddd; }
+                    .invoice-header { text-align: center; margin-bottom: 20px; }
+                    .invoice-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px; }
+                    .invoice-table th, .invoice-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    .invoice-summary { border-top: 2px dashed #333; margin-top: 15px; font-size: 15px; padding-top: 10px; }
+                    .invoice-total { font-size: 18px; font-weight: bold; margin-top: 10px; }
+                    .item-size-sub { font-size: 12px; color: #777; display: block; }
+                    .invoice-qr { display: block; width: 72px; height: 72px; margin: 10px auto; }
+                    
+                    /* Force QR to align center if present */
+                    .invoice-qr { text-align: center !important; }
+                    .invoice-qr img { margin: 0 auto; display: block; }
+                </style>
+            </head>
+            <body>
+                <div class="invoice-box" style="box-shadow: none !important;">
+                    ${htmlContent}
+                </div>
+            </body>
+            </html>
+        `;
+
+        return docHtml;
     }
     
-    // Download/Save Invoice Functionality with scale adjustment for multi-page PDF
     function downloadInvoice(deleteAfter = false) {
       if (!INVOICE) {
           showToast("No active invoice to download.", "error");
           return;
       }
-      let area = document.getElementById('invoice-box');
       
-      const pdfOptions = {
-          margin: 10,
-          filename: INVOICE.id + '.pdf',
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 3 }, 
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+      const docHtml = generateDocContent(INVOICE.id);
+      
+      const blob = new Blob([docHtml], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = INVOICE.id + ".doc"; // Use .doc extension
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-      html2pdf().set(pdfOptions).from(area).save().then(()=>{
-          showToast("Bill successfully saved to device!", "success");
-          if (deleteAfter) {
-              db.collection('holdbills').doc(INVOICE.id).delete().then(()=>{
-                  showSavedBills();
-              });
-          }
-      }).catch(err => {
-          showToast("Download failed: " + err.message, "error");
-      });
+      showToast("Bill successfully saved as DOC file!", "success");
+      
+      if (deleteAfter) {
+          db.collection('holdbills').doc(INVOICE.id).delete().then(()=>{
+              showSavedBills();
+          });
+      }
     }
     
-    function shareInvoice() {
+    async function shareInvoice() {
         if (!navigator.share) {
             showToast("Sharing not supported on this device/browser.", "error");
             return;
@@ -1445,26 +1487,19 @@
         }
 
         try {
-            const element = document.getElementById('invoice-box');
-            const pdfOptions = {
-                margin: 10,
-                filename: INVOICE.id + '.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 3 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
+            // Generate content as text/html for sharing (will often open in email/notes/docs apps)
+            const docHtml = generateDocContent(INVOICE.id, true);
+            const docBlob = new Blob([docHtml], { type: 'text/html' }); // Use text/html for potential compatibility
+
+            const file = new File([docBlob], INVOICE.id + ".doc", { type: 'application/msword' });
             
-            html2pdf().set(pdfOptions).from(element).outputPdf('blob').then(async (pdfBlob) => {
-                const file = new File([pdfBlob], INVOICE.id + ".pdf", { type: 'application/pdf' });
-                
-                await navigator.share({
-                    title: 'Neaupane Puja Pasal - Invoice ' + INVOICE.id,
-                    text: `Dear ${INVOICE.customer}, your total amount is ₹${INVOICE.total.toFixed(2)}. Thank you for your purchase from Neaupane Puja Pasal (Mobile: +919641891846).`,
-                    files: [file],
-                });
-                
-                showToast("Invoice shared successfully!", "success");
+            await navigator.share({
+                title: 'Neaupane Puja Pasal - Invoice ' + INVOICE.id,
+                text: `Dear ${INVOICE.customer}, your total amount is ₹${INVOICE.total.toFixed(2)}. Please find the invoice attached. Thank you for your purchase.`,
+                files: [file],
             });
+            
+            showToast("Invoice shared successfully!", "success");
             
         } catch (error) {
             if (error.name !== 'AbortError') {
@@ -1472,8 +1507,13 @@
             }
         }
     }
+    // === END CUSTOM DOC GENERATION FUNCTIONS ===
 
 
+    function printInvoice() {
+      window.print();
+    }
+    
     function saveHoldInvoice() {
       db.collection('holdbills').doc(INVOICE.id).set(INVOICE).then(() => {
           showToast("Bill successfully saved/held in 'Saved Bills'!", "success");
@@ -1811,8 +1851,8 @@
             // Update actions for History Print context
             document.getElementById('invoice-actions').innerHTML = `
                 <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
-                <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
-                <button onclick="shareInvoice()" id="share-invoice-btn-hist"><i class="fa-solid fa-share-nodes"></i> Share</button>
+                <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download (DOC)</button>
+                <button onclick="shareInvoice()" id="share-invoice-btn-hist"><i class="fa-solid fa-share-nodes"></i> Share (DOC)</button>
                 <button onclick="renderAdminHistory()">Back to History</button>
             `;
             if (!navigator.share) {
