@@ -166,21 +166,18 @@
       box-shadow: 0 2px 9px #f5cb44a0;
     }
 
-    /* Invoice styles - Optimized for large lists/printing */
+    /* Invoice styles */
     .invoice-area {
       background: var(--color-invoice-bg); padding: 34px 2vw;
       display:none; flex-direction: column; align-items:center;
       min-height:70vh;
     }
     .invoice-box {
-      min-width: 350px; 
-      max-width: 450px; 
+      min-width: 350px; max-width: 430px;
       background: #fffdfa;
-      border-radius: 14px; 
-      padding: 23px 25px 15px 25px;
+      border-radius: 14px; padding: 23px 25px 15px 25px;
       box-shadow: 0 3px 24px #e9e4ab9a;
-      margin: auto; 
-      margin-top: 32px;
+      margin: auto; margin-top: 32px;
       color: #3f3a1e;
       font-size: 1.05em;
       position: relative;
@@ -190,7 +187,7 @@
       display: flex; 
       flex-direction: column;
     }
-    /* FIX 2: QR Code Default Position (top right, inside invoice-box) */
+    /* QR Code Default Position (top right, inside invoice-box) */
     .invoice-qr { 
       position: absolute; 
       right:15px; 
@@ -218,8 +215,88 @@
     .invoice-actions {
       display: flex; gap: 13px; justify-content: center; margin:18px 0 2px 0;
     }
+    .invoice-actions button {
+      padding: 8px 14px; border-radius: 6px; border:none;
+      font-size: 1.04em; font-weight: 600;
+      background: var(--color-accent); color: var(--color-nav); cursor:pointer;
+      box-shadow:0 2px 7px #faf088a5;
+      transition: background 0.17s;
+    }
 
-    /* Auth/login styles - FIX 1: Fully Responsive Login Page */
+    /* Admin Section */
+    .admin-area {
+      display: flex; flex:1; background: var(--color-admin-bg);
+      padding-bottom: 10px;
+    }
+    .admin-nav { width: 220px; background: #ffffffb9; padding: 20px 12px 12px 12px;
+      border-right: 1px solid #f7c85b; min-width: 140px; border-radius: 0 24px 24px 0;}
+    .admin-nav .admin-tab {
+      margin-bottom: 13px; display:flex; align-items:center; gap:11px;
+      padding:10px 13px; font-size:1em; border-radius: 7px 20px 20px 7px;
+      cursor:pointer;
+      background:none; border:none; color: #5f471e;
+      font-weight:500;
+    }
+    .admin-tab.active, .admin-tab:hover {
+      background: var(--color-dashboard); color: var(--color-nav);
+    }
+
+    .admin-content { flex: 1; padding: 28px 17px;}
+    /* Add-item/Add-category/form sections */
+    .form-card {
+      background: #fff; border-radius: 8px; box-shadow: 0 2px 9px #b9b6ad47;
+      padding: 22px 18px; margin-bottom: 21px;
+    }
+    .form-card label, .form-card input, .form-card select, .form-card textarea {
+      display: block; width: 97%; margin-top: 7px; padding:9px 9px;
+      font-size: 1em; border-radius:5px; border:1px solid #d4cdad; margin-bottom: 10px;
+    }
+    .form-card button {
+      background: var(--color-accent); color: var(--color-nav); font-weight:600;
+      border:none; border-radius:5px; padding:9px 13px; font-size:1em; margin-top:9px;
+      cursor:pointer;
+    }
+    .admin-list-table { width: 100%; border-spacing: 0; margin-top: 9px; }
+    .admin-list-table th, .admin-list-table td {
+      padding: 7px 3px; border-bottom: 1px solid #f3ecd6; font-size: 1em;
+      text-align:left;
+    }
+    .admin-stats { display:flex; gap:22px; flex-wrap:wrap; margin-bottom:18px;}
+    .admin-card {
+      background: #fdf9e0; padding:16px 19px; border-radius:9px; min-width:120px;
+      box-shadow: 0 1px 7px #ffe8a0a8; min-height: 60px; text-align: center;
+      flex:1 1 110px;
+    }
+    .admin-card .card-title { color: #716605; font-size:1.05em;}
+    .admin-card .card-value { font-size: 1.23rem; font-weight:bold; margin-top:5px;}
+    /* History and Report */
+    .invoice-history-table { width:100%; border-spacing:0;}
+    .invoice-history-table th, .invoice-history-table td {
+      padding: 8px 4px; border-bottom: 1px solid #f4e5ac; text-align:left;
+    }
+    .year-warning { color: var(--color-error); font-weight: bold; margin:12px 0;}
+    /* Toast/snackbar */
+    .toast {
+      display:none; position:fixed; bottom:23px; left: 50%; transform: translateX(-50%);
+      background: #3d2f11; color:#fff1ae; padding: 14px 35px; border-radius:21px;
+      font-size:1.08em; font-weight:500; z-index: 4000;
+      box-shadow: 0 3px 19px #be9b2690;
+      animation: fadeInOut 3s;
+    }
+    @keyframes fadeInOut {
+      0%{opacity:0;bottom:8px;}
+      8%{opacity:1;bottom:23px;}
+      91%{opacity:1;}
+      97%{opacity:0;}
+      100%{opacity:0;}
+    }
+
+    /* Loading spinner */
+    .spinner { display:inline-block; width:25px; height:25px; border: 3.5px solid #f5bd24;
+      border-right: 3.5px solid #fff; border-radius:50%; animation: spin 1s linear infinite;}
+    @keyframes spin { 100%{transform:rotate(360deg);} }
+
+    /* Auth/login styles - FIX 1: Responsive Login Page */
     .login-screen {
       position: fixed; 
       z-index: 70000;
@@ -236,7 +313,7 @@
       border-radius: 15px; 
       box-shadow: 0 2px 31px #e1c96295;
       padding: 36px 41px; 
-      min-width: 300px; /* Minimized min-width for small phones */
+      min-width: 300px;
       max-width: 90vw; 
       width: 380px; 
       text-align: center; 
@@ -246,7 +323,7 @@
       transition: all 0.3s ease-out;
     }
     .login-box img { 
-        height: 80px; /* Slightly smaller logo on mobile */
+        height: 80px; 
         margin-bottom:15px; 
     }
     .login-box h2 { 
@@ -259,8 +336,8 @@
       width: 100%; 
       margin: 7px 0 15px 0; 
       border-radius: 7px; 
-      font-size:1rem; /* Responsive font size */
-      padding: 12px; /* Increased padding for better touch targets */
+      font-size:1rem; 
+      padding: 12px; 
       border: 1px solid #ecd56d;
     }
     .login-box button { 
@@ -269,14 +346,97 @@
       font-weight: bold; 
       cursor: pointer;
     }
+    .login-error { 
+        color: var(--color-error); 
+        font-size: 1.1em; 
+    }
+    
+    /* Responsive Design - Table Wrapper for horizontal scrolling on small screens */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
 
-    /* Main Responsive Breakpoints */
+    /* Delete button */
+    .delete-btn {
+      background:#e84141;
+      color:white;
+      border:none;
+      padding:6px 10px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:0.9rem;
+    }
+
+    .delete-btn i {
+      pointer-events: none;
+    }
+
+    /* Mobile responsive table for ADDED ITEMS/PRODUCTS */
+    @media(max-width: 720px) {
+      /* Added-Items-Table (Admin) */
+      #added-items-table th,
+      #added-items-table td {
+        padding: 10px 6px;
+        font-size: 0.82rem;
+        white-space: nowrap; /* Keep content on one line */
+      }
+      /* Product-Listing-Table (Billing) */
+      #product-table th,
+      #product-table td {
+        padding: 8px 5px;
+        font-size: 0.88em;
+      }
+      .delete-btn, .add-btn {
+        padding:4px 8px;
+        font-size:0.8rem;
+      }
+    }
+    /* Hide on very small devices */
+    @media(max-width: 520px) {
+      /* Hide Company + Category on very small devices */
+      #added-items-table th:nth-child(2),
+      #added-items-table td:nth-child(2),
+      #added-items-table th:nth-child(3),
+      #added-items-table td:nth-child(3) {
+        display:none; 
+      }
+    }
+    @media(max-width: 380px) {
+      /* Hide Qty also */
+      #added-items-table th:nth-child(4),
+      #added-items-table td:nth-child(4) {
+        display:none; 
+      }
+      /* FIX 1: Login Box Padding on smallest screens */
+      .login-box {
+          padding: 25px 20px;
+          width: 95vw;
+      }
+      .login-box img { 
+          height: 70px; 
+      }
+      .topnav {
+          padding: 6px 10px;
+      }
+      body {
+          padding-top: 70px;
+      }
+      .site-container {
+          height: calc(100vh - 70px);
+      }
+    }
+
+    /* Main Responsive Breakpoints (Vertical stacking for tablets/mobiles) */
     @media (max-width: 850px) {
       .site-container {
         flex-direction: column;
         height: auto;
         width: 100%;
       }
+      /* Sidebar for Mobile: horizontal nav */
       .sidebar { 
         width: 100vw; 
         flex-direction: row; 
@@ -293,6 +453,17 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
+      .sidebar .nav-item { 
+        flex-shrink: 0;
+        padding: 6px 12px;
+        margin: 4px;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        border-radius: 4px;
+      }
+      .sidebar .nav-item i {
+        display: none;
+      }
       .mainarea { 
         height:auto;
         padding: 0; 
@@ -307,28 +478,22 @@
         padding: 15px 15px 15px 15px; 
         max-width: 100%; 
       }
-    }
-    
-    @media (max-width: 450px) {
-        .login-box {
-            padding: 25px 20px;
-            width: 95vw;
-        }
-        .login-box img { 
-            height: 70px; 
-        }
-        .topnav {
-            padding: 6px 10px;
-        }
-        body {
-            padding-top: 70px;
-        }
-        .site-container {
-            height: calc(100vh - 70px);
-        }
+      .product-listing {
+        border-right: none;
+        border-bottom: 2px solid #ffd392;
+      }
+      .cart {
+        border-left: none;
+        box-shadow: none;
+      }
+      .admin-nav {
+        border-right: none;
+        border-bottom: 1px solid #f7c85b;
+        border-radius: 0;
+      }
     }
 
-    /* Print Styles (Critical for multi-page PDF generation) */
+    /* Print Styles (Critical for multi-page PDF generation & QR positioning) */
     @media print {
       body * { visibility: hidden; }
       
@@ -369,8 +534,8 @@
       /* FIX 2: Ensure QR code is always top-right (absolute within relative .invoice-box) */
       .invoice-qr {
           position: absolute !important; 
-          right: 10px !important; 
-          top: 10px !important;
+          right: 10px !important; /* Right Padding */
+          top: 10px !important;   /* Top Padding */
           margin: 0 !important;
           padding: 0 !important;
           text-align: right !important;
@@ -485,7 +650,6 @@
         <div class="invoice-box" id="invoice-box">
           </div>
         <div class="invoice-actions" id="invoice-actions">
-          <!-- Updated Action Buttons -->
           <button onclick="printInvoice()"><i class="fa fa-print"></i> Print</button>
           <button onclick="downloadInvoice()"><i class="fa fa-download"></i> Save/Download</button>
           <button onclick="shareInvoice()" id="share-invoice-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
@@ -527,7 +691,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <!-- Font Awesome 6.4.2 includes solid icons like fa-share-nodes -->
   <script>
     // ==== Replace with your real Firebase config ====
     const firebaseConfig = {
@@ -763,6 +926,7 @@
     }
     function seedDemoDataIfEmpty(err) {
       if (err && err.code === 'not-found') {
+        // No such collection: seed demo data
         let demoCats = [
           { name: "Puja Samagri" }, { name: "Books" }, { name: "Incense" }
         ];
@@ -791,8 +955,9 @@
     let matchSearch = !search || [item.name, item.company, item.sku, (item.description || "")].join(" ").toLowerCase().includes(search);
     return matchCat && matchSearch;
   }).forEach(item => {
-    let displayQty = item.stock || item.quantity || 0;  
-    let unit = item.unit || 'pcs'; 
+    // === UPDATED: Unit aur Stock ko show karo ===
+    let displayQty = item.stock || item.quantity || 0;  // Stock dikhao agar hai, nahi to quantity
+    let unit = item.unit || 'pcs';  // Default unit
     
     tbody.innerHTML += `
       <tr>
@@ -819,6 +984,7 @@
     function addToCart(itemId) {
       let qty = Number(document.getElementById('qty-'+itemId).value)||1;
       let item = ITEMS.find(it=>it.id==itemId);
+      // Ensure we clone the item including size for the cart
       let itemForCart = { ...item, qty: qty, size: item.size || '' }; 
       let inCart = CART.find(ci=>ci.id===item.id);
       
@@ -1539,7 +1705,6 @@
             <td>${d.customer||"-"}</td>
             <td>₹${d.total.toFixed(2)}</td>
             <td>
-              <!-- Print button for history -->
               <button class="add-btn" onclick="printInvoiceById('${d.id}')"><i class="fa fa-print"></i> Print</button>
               <button class="delete-btn" onclick="deleteInvoice('${d.id}')"><i class="fa fa-trash"></i></button>
             </td>
